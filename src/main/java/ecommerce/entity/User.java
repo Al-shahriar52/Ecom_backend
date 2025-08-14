@@ -70,7 +70,7 @@ public class User implements UserDetails { // <-- Implement the interface
      */
     @Override
     public String getUsername() {
-        return this.email;
+        return email != null ? email : phone;
     }
 
     /**
