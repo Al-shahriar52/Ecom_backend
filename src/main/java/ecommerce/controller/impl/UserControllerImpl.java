@@ -1,23 +1,27 @@
 package ecommerce.controller.impl;
 
+import ecommerce.config.JwtService;
 import ecommerce.controller.UserController;
+import ecommerce.dto.GenericResponseDto;
 import ecommerce.dto.UserDto;
 import ecommerce.dto.pageResponse.UserResponse;
 import ecommerce.service.UserService;
+import ecommerce.service.impl.TokenBlacklistService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/user")
+@RequestMapping("/api/v1/user")
+@RequiredArgsConstructor
 public class UserControllerImpl implements UserController {
 
     private final UserService userService;
-
-    public UserControllerImpl(UserService userService) {
-        this.userService = userService;
-    }
+    private final JwtService jwtService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     @PostMapping("/add")
@@ -62,6 +66,20 @@ public class UserControllerImpl implements UserController {
 
         UserResponse user = userService.search(pageNo, pageSize, sortBy, query);
         return new ResponseEntity<>(user, HttpStatus.OK);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request) {
+        final String authHeader = request.getHeader("Authorization");
+
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String jwt = authHeader.substring(7);
+            String jti = jwtService.extractJti(jwt);
+            tokenBlacklistService.blacklistToken(jti);
+            return new ResponseEntity<>(GenericResponseDto.success("Successfully logged out.", null, HttpStatus.OK.value()), HttpStatus.OK);
+        }
+
+        return new ResponseEntity<>(GenericResponseDto.error("Forbidden", "Invalid request.", HttpStatus.FORBIDDEN.value()), HttpStatus.FORBIDDEN);
     }
 
 }
