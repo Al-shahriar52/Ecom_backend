@@ -3,8 +3,10 @@ package ecommerce.controller.impl;
 import ecommerce.config.JwtService;
 import ecommerce.controller.UserController;
 import ecommerce.dto.GenericResponseDto;
+import ecommerce.dto.LoginResponse;
 import ecommerce.dto.UserDto;
 import ecommerce.dto.pageResponse.UserResponse;
+import ecommerce.service.AuthService;
 import ecommerce.service.UserService;
 import ecommerce.service.impl.TokenBlacklistService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,6 +24,7 @@ public class UserControllerImpl implements UserController {
     private final UserService userService;
     private final JwtService jwtService;
     private final TokenBlacklistService tokenBlacklistService;
+    private final AuthService authService;
 
     @Override
     @PostMapping("/add")
@@ -69,6 +72,7 @@ public class UserControllerImpl implements UserController {
     }
 
     @PostMapping("/logout")
+    @Override
     public ResponseEntity<?> logout(HttpServletRequest request) {
         final String authHeader = request.getHeader("Authorization");
 
@@ -79,7 +83,17 @@ public class UserControllerImpl implements UserController {
             return new ResponseEntity<>(GenericResponseDto.success("Successfully logged out.", null, HttpStatus.OK.value()), HttpStatus.OK);
         }
 
-        return new ResponseEntity<>(GenericResponseDto.error("Forbidden", "Invalid request.", HttpStatus.FORBIDDEN.value()), HttpStatus.FORBIDDEN);
+        return new ResponseEntity<>(GenericResponseDto.error("Forbidden", "Access token required.", HttpStatus.FORBIDDEN.value()), HttpStatus.FORBIDDEN);
     }
 
+    @PostMapping("/refreshAccessToken")
+    public ResponseEntity<?> refreshToken(
+            HttpServletRequest request
+    ) {
+        LoginResponse response = authService.refreshToken(request);
+        if (response == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+        }
+        return new ResponseEntity<>(GenericResponseDto.success("Access token generated", response, HttpStatus.OK.value()), HttpStatus.OK);
+    }
 }
