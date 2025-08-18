@@ -1,6 +1,7 @@
 package ecommerce.controller;
 
 import ecommerce.dto.UserDto;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 
 public interface UserController {
@@ -10,4 +11,5 @@ public interface UserController {
     ResponseEntity<?> getAll(int pageNo, int pageSize, String sortBy);
     ResponseEntity<?> update(Long userId, UserDto userDto);
     ResponseEntity<?> search(int pageNo, int pageSize, String sortBy, String query);
+    ResponseEntity<?> logout(HttpServletRequest request);
 }

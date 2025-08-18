@@ -8,9 +8,12 @@ import ecommerce.dto.RegistrationResponseDto;
 import ecommerce.entity.Role;
 import ecommerce.entity.User;
 import ecommerce.exceptionHandling.BadRequestException;
+import ecommerce.exceptionHandling.ForbiddenException;
+import ecommerce.exceptionHandling.UnauthorizedException;
 import ecommerce.repository.UserRepository;
 import ecommerce.service.AuthService;
 import ecommerce.utils.ContactValidator;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -63,6 +66,10 @@ public class AuthServiceImpl implements AuthService {
     }
 
     public LoginResponse login(LoginRequest authenticationRequest) {
+
+        var user = userRepository.findByEmailOrPhoneAndStatusIsTrue(authenticationRequest.getEmailOrPhone(), authenticationRequest.getEmailOrPhone()).orElseThrow(()->
+                new UsernameNotFoundException("No account found. Please register first."));
+
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         authenticationRequest.getEmailOrPhone(),
@@ -70,9 +77,43 @@ public class AuthServiceImpl implements AuthService {
                 )
         );
 
-        var user = userRepository.findByEmailOrPhoneAndStatusIsTrue(authenticationRequest.getEmailOrPhone(), authenticationRequest.getEmailOrPhone()).orElseThrow(()->
-                new UsernameNotFoundException("User is not valid"));
-        var jwtToken = jwtService.generateToken((UserDetails) user);
-        return LoginResponse.builder().accessToken(jwtToken).tokenType("Bearer").build();
+        var jwtToken = jwtService.generateToken(user);
+        var refreshToken = jwtService.generateRefreshToken(user);
+        return LoginResponse.builder()
+                .accessToken(jwtToken)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer").build();
     }
+
+    @Override
+    public LoginResponse refreshToken(HttpServletRequest request) {
+        final String authHeader = request.getHeader("Authorization");
+        final String refreshToken;
+        final String username;
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("Authorization is required");
+        }
+
+        refreshToken = authHeader.substring(7);
+        username = jwtService.extractUsername(refreshToken);
+
+        if (username != null) {
+            var userDetails = this.userRepository.findByEmailOrPhoneAndStatusIsTrue(username, username)
+                    .orElseThrow();
+
+            if (jwtService.isTokenValid(refreshToken, userDetails)) {
+                var accessToken = jwtService.generateToken(userDetails);
+                return LoginResponse.builder()
+                        .accessToken(accessToken)
+                        .refreshToken(refreshToken) // Return the original refresh token
+                        .build();
+            }else {
+                throw new ForbiddenException("Invalid token");
+            }
+        }else {
+            throw new BadRequestException("Invalid user request");
+        }
+    }
+
 }
