@@ -9,6 +9,7 @@ import ecommerce.dto.pageResponse.UserResponse;
 import ecommerce.service.AuthService;
 import ecommerce.service.UserService;
 import ecommerce.service.impl.TokenBlacklistService;
+import ecommerce.utils.TokenUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class UserControllerImpl implements UserController {
     private final JwtService jwtService;
     private final TokenBlacklistService tokenBlacklistService;
     private final AuthService authService;
+    private final TokenUtil tokenUtil;
 
     @Override
     @PostMapping("/add")
@@ -35,11 +37,10 @@ public class UserControllerImpl implements UserController {
     }
 
     @Override
-    @GetMapping("/get/{userId}")
-    public ResponseEntity<UserDto> getById(@PathVariable Long userId) {
-
-        UserDto user = userService.getById(userId);
-        return new ResponseEntity<>(user, HttpStatus.OK);
+    @GetMapping("/get")
+    public ResponseEntity<?> getById(HttpServletRequest servletRequest) {
+        UserDto user = userService.getById(servletRequest);
+        return new ResponseEntity<>(GenericResponseDto.success("Fetch successfully", user, HttpStatus.OK.value()), HttpStatus.OK);
     }
 
     @Override
@@ -53,11 +54,10 @@ public class UserControllerImpl implements UserController {
     }
 
     @Override
-    @PutMapping("/update/{userId}")
-    public ResponseEntity<?> update(@PathVariable Long userId, @Valid @RequestBody UserDto userDto) {
-
-        UserDto updateUser = userService.update(userId, userDto);
-        return new ResponseEntity<>(updateUser, HttpStatus.OK);
+    @PutMapping("/update")
+    public ResponseEntity<?> update(@RequestBody @Valid UserDto userDto, HttpServletRequest servletRequest) {
+        UserDto updateUser = userService.update(userDto, servletRequest);
+        return new ResponseEntity<>(GenericResponseDto.success("Account updated successfully", updateUser, HttpStatus.OK.value()), HttpStatus.OK);
     }
 
     @Override

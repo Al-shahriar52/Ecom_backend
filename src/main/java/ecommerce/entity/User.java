@@ -51,6 +51,9 @@ public class User implements UserDetails { // <-- Implement the interface
 
     private Boolean status = true;
 
+    private Gender gender;
+
+    private String dob;
 
     // ========= UserDetails Method Implementations =========
 

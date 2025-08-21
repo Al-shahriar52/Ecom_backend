@@ -3,10 +3,14 @@ package ecommerce.service.impl;
 import ecommerce.dto.UserDto;
 import ecommerce.dto.pageResponse.UserResponse;
 import ecommerce.entity.User;
+import ecommerce.exceptionHandling.BadRequestException;
 import ecommerce.exceptionHandling.ResourceNotFound;
 import ecommerce.repository.UserRepository;
 import ecommerce.service.UserService;
 import ecommerce.utils.DateTimeUtil;
+import ecommerce.utils.TokenUtil;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -16,19 +20,16 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final DateTimeUtil dateTimeUtil;
     private final ModelMapper mapper;
-
-    public UserServiceImpl(UserRepository userRepository, DateTimeUtil dateTimeUtil, ModelMapper mapper) {
-        this.userRepository = userRepository;
-        this.dateTimeUtil = dateTimeUtil;
-        this.mapper = mapper;
-    }
+    private final TokenUtil tokenUtil;
 
     public UserDto add(UserDto userDto) {
 
@@ -42,11 +43,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserDto getById(Long userId) {
-
-        User user = userRepository.findById(userId).orElseThrow(()->
-                new ResourceNotFound("User","id",userId));
-
+    public UserDto getById(HttpServletRequest servletRequest) {
+        String authorization = servletRequest.getHeader("Authorization");
+        User userInfo = tokenUtil.extractUserInfo(authorization);
+        User user = userRepository.findById(userInfo.getId()).orElseThrow(()->
+                new ResourceNotFound("User","id", userInfo.getId()));
         return mapToDto(user);
     }
 
@@ -63,12 +64,31 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserDto update(Long userId, UserDto userDto) {
+    public UserDto update(UserDto userDto, HttpServletRequest servletRequest) {
 
-        User user = userRepository.findById(userId).orElseThrow(()->
-                new ResourceNotFound("User", "id", userId));
+        String authToken = servletRequest.getHeader("Authorization");
+        User userInfo = tokenUtil.extractUserInfo(authToken);
+        User user = userRepository.findById(userInfo.getId()).orElseThrow(()->
+                new ResourceNotFound("User", "id", userInfo.getId()));
 
         user.setName(userDto.getName());
+        if (user.getEmail() == null && userDto.getEmail() != null) {
+            Optional<User> byEmail = userRepository.findByEmail(userDto.getEmail());
+            if (byEmail.isPresent()) {
+                throw new BadRequestException("Email already exist. please change");
+            }
+            user.setEmail(userDto.getEmail());
+        }
+
+        if (user.getPhone() == null && userDto.getPhone() != null) {
+            Optional<User> byPhone = userRepository.findByPhone(userDto.getPhone());
+            if (byPhone.isPresent()) {
+                throw new BadRequestException("Phone already exist. please change");
+            }
+            user.setPhone(userDto.getPhone());
+        }
+        user.setDob(userDto.getDob());
+        user.setGender(userDto.getGender());
         User updateInfo = userRepository.save(user);
         return mapToDto(updateInfo);
     }
