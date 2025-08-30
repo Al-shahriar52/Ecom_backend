@@ -44,7 +44,7 @@ public class AuthServiceImpl implements AuthService {
         User user = new User();
         user.setName(requestDto.getName());
         user.setPassword(passwordEncoder.encode(requestDto.getPassword()));
-        user.setRoles(Set.of(Role.USER));
+        user.setRoles(Set.of(Role.ADMIN));
 
 
         switch (type) {
@@ -68,7 +68,7 @@ public class AuthServiceImpl implements AuthService {
     public LoginResponse login(LoginRequest authenticationRequest) {
 
         var user = userRepository.findByEmailOrPhoneAndStatusIsTrue(authenticationRequest.getEmailOrPhone(), authenticationRequest.getEmailOrPhone()).orElseThrow(()->
-                new UsernameNotFoundException("No account found. Please register first."));
+                new BadRequestException("No account found. Please register first."));
 
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(

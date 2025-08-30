@@ -8,6 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
@@ -21,26 +23,40 @@ public class Product {
     @NotBlank
     private String name;
 
-    @Lob
-    private String image;
-
+    @Column(columnDefinition = "TEXT")
     private String description;
 
-    @NotBlank
-    private String brand;
-
-    @NotBlank
-    private String category;
+    private ProductStatus status;
 
     @NotNull
     @Min(value = 1)
-    private double price;
+    private double originalPrice;
 
     @NotNull
     @Min(value = 0)
-    private int countInStock;
+    private double discountedPrice;
+
+    @NotNull
+    @Min(value = 0)
+    private int quantity;
+
+    @NotNull
+    @Column(unique = true)
+    private String sku;
 
     private double rating;
 
     private Long numReviews;
+
+    @ManyToOne
+    private Brand brand;
+
+    @ManyToOne
+    private Tag tag;
+
+    @ManyToOne
+    private Category category;
+
+    @ManyToOne
+    private SubCategory subCategory;
 }

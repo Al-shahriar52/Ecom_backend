@@ -1,18 +1,51 @@
 package ecommerce.dto;
 
+import ecommerce.entity.ProductStatus;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+
+import java.util.List;
 
 @Data
 public class ProductDto {
 
-    private Long id;
+    private Long productId;
+
+    @NotNull
     private String name;
-    private String image;
+
+    @NotNull
     private String description;
-    private String brand;
-    private String category;
-    private double price;
-    private int countInStock;
+
+    @NotNull
+    private Long brandId;
+
+    @NotNull
+    private Long categoryId;
+
+    @NotNull
+    private Long subCategoryId;
+
+    @NotNull
+    private Long tagId;
+
+    private ProductStatus status;
+
+    private List<VariationDto> variations;
+
+    @NotNull
+    private double originalPrice;
+
+    @NotNull
+    private double discountedPrice;
+
+    @NotNull
+    private int quantity;
+
+    @NotNull
+    private String sku;
+
     private double rating;
+
     private Long numReviews;
 }

@@ -1,18 +1,28 @@
 package ecommerce.controller.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import ecommerce.controller.ProductController;
+import ecommerce.dto.GenericResponseDto;
 import ecommerce.dto.ProductDto;
+import ecommerce.dto.SubCategoryDto;
 import ecommerce.dto.pageResponse.ProductResponse;
+import ecommerce.entity.Brand;
+import ecommerce.entity.Category;
+import ecommerce.entity.Tag;
 import ecommerce.service.ProductService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @RestController
-@RequestMapping("/product")
+@RequestMapping("/api/v1/product")
 public class ProductControllerImpl implements ProductController {
 
     private final ProductService productService;
@@ -22,11 +32,14 @@ public class ProductControllerImpl implements ProductController {
     }
 
     @Override
-    @PostMapping("/add")
-    public ResponseEntity<?> add(@Valid @RequestBody ProductDto productDto) throws IOException {
+    @PostMapping(value = "/add", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<?> add(@Valid @RequestPart("productDto") String productDtoString, @RequestPart("files") MultipartFile[] files) throws IOException {
 
-        ProductDto product = productService.add(productDto);
-        return new ResponseEntity<>(product, HttpStatus.CREATED);
+        ObjectMapper mapper = new ObjectMapper();
+        ProductDto productDto = mapper.readValue(productDtoString, ProductDto.class);
+        ProductDto product = productService.add(productDto, files);
+        return new ResponseEntity<>(GenericResponseDto.success("Product created successfully",product, HttpStatus.CREATED.value()), HttpStatus.CREATED);
     }
 
     @Override
@@ -45,10 +58,10 @@ public class ProductControllerImpl implements ProductController {
     }
 
     @Override
-    @PutMapping("/update/{productId}")
-    public ResponseEntity<?> update(@PathVariable Long productId, @Valid @RequestBody ProductDto productDto) {
+    @PutMapping("/update")
+    public ResponseEntity<?> update(@Valid @RequestBody ProductDto productDto, @RequestParam("file") MultipartFile[] files) throws IOException {
 
-        ProductDto productUpdate = productService.update(productId,productDto);
+        ProductDto productUpdate = productService.update(productDto, files);
         return new ResponseEntity<>(productUpdate, HttpStatus.OK);
     }
 
@@ -61,5 +74,33 @@ public class ProductControllerImpl implements ProductController {
 
         ProductResponse productSearch = productService.search(pageNo, pageSize, sortBy, query);
         return new ResponseEntity<>(productSearch, HttpStatus.OK);
+    }
+
+    @GetMapping("/categories")
+    @Override
+    public ResponseEntity<?> categoryList() {
+        List<Category> categories = productService.categoryList();
+        return new ResponseEntity<>(GenericResponseDto.success("Fetch category successfully", categories, HttpStatus.OK.value()), HttpStatus.OK);
+    }
+
+    @GetMapping("/subCategory/{categoryId}")
+    @Override
+    public ResponseEntity<?> subCategoryList(@PathVariable Long categoryId) {
+        List<SubCategoryDto> subCategories = productService.subCategoryList(categoryId);
+        return new ResponseEntity<>(GenericResponseDto.success("Fetch sub category successfully", subCategories, HttpStatus.OK.value()), HttpStatus.OK);
+    }
+
+    @GetMapping("/brand")
+    @Override
+    public ResponseEntity<?> brandList() {
+        List<Brand> brands = productService.brandList();
+        return new ResponseEntity<>(GenericResponseDto.success("Fetch category successfully", brands, HttpStatus.OK.value()), HttpStatus.OK);
+    }
+
+    @GetMapping("/tag")
+    @Override
+    public ResponseEntity<?> tagList() {
+        List<Tag> tags = productService.tagList();
+        return new ResponseEntity<>(GenericResponseDto.success("Fetch category successfully", tags, HttpStatus.OK.value()), HttpStatus.OK);
     }
 }

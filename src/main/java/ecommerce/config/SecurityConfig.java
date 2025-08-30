@@ -33,7 +33,16 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/auth/**", "/api/v1/location/**").permitAll()
+                .requestMatchers("/api/v1/auth/**",
+                        "/api/v1/location/**",
+                        "/api/v1/product/categories",
+                        "/api/v1/product/subCategory/{categoryId}",
+                        "/api/v1/product/brand",
+                        "/api/v1/product/tag",
+                        "/v3/api-docs/**",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html")
+                        .permitAll()
                 .anyRequest().authenticated()
         )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

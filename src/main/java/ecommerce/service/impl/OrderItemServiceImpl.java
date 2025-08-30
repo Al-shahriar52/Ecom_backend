@@ -31,8 +31,8 @@ public class OrderItemServiceImpl implements OrderItemService {
                 new ResourceNotFound("Product", "id", productId));
 
         item.setName(product.getName());
-        item.setPrice(product.getPrice());
-        item.setImage(product.getImage());
+        item.setPrice(product.getDiscountedPrice());
+//        item.setImage(product.getImage());
         item.setQuantity(orderItemDto.getQuantity());
         item.setProduct(product);
         orderItemRepository.save(item);
