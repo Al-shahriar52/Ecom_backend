@@ -44,7 +44,7 @@ public class AuthServiceImpl implements AuthService {
         User user = new User();
         user.setName(requestDto.getName());
         user.setPassword(passwordEncoder.encode(requestDto.getPassword()));
-        user.setRoles(Set.of(Role.ADMIN));
+        user.setRoles(Set.of(Role.USER));
 
 
         switch (type) {

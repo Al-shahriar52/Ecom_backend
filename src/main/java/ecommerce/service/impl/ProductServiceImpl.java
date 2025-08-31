@@ -4,6 +4,7 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.Transformation;
 import com.cloudinary.utils.ObjectUtils;
 import ecommerce.dto.ProductDto;
+import ecommerce.dto.ProductSearchResponseDto;
 import ecommerce.dto.SubCategoryDto;
 import ecommerce.dto.pageResponse.ProductResponse;
 import ecommerce.entity.*;
@@ -113,14 +114,15 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductResponse search(int pageNo, int pageSize, String sortBy, String query) {
-        Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
-        Page<Product> products = productRepository.search(pageable, query);
-
-        List<Product> productList = products.getContent();
-        List<ProductDto> content = productList.stream().map((this::mapToDto)).toList();
-
-        return getProductResult(content, products);
+    public ProductResponse search(int pageNo, int pageSize, String sortBy,
+                                  String direction, String query,
+                                  String category) {
+        Sort sort = direction.equalsIgnoreCase(Sort.Direction.DESC.name())
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+        Pageable pageable = PageRequest.of(pageNo, pageSize, sort);
+        Page<ProductSearchResponseDto> products = productRepository.search(pageable, query, category);
+        return getProductResult(products);
     }
 
     @Override
@@ -143,10 +145,10 @@ public class ProductServiceImpl implements ProductService {
         return tagRepository.findAll();
     }
 
-    public ProductResponse getProductResult(List<ProductDto> content, Page<Product> products) {
+    public ProductResponse getProductResult(Page<ProductSearchResponseDto> products) {
 
         ProductResponse response = new ProductResponse();
-        response.setContent(content);
+        response.setContent(products.getContent());
         response.setPageNo(products.getNumber());
         response.setPageSize(products.getSize());
         response.setTotalPages(products.getTotalPages());

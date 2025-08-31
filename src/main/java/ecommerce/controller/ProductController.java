@@ -12,7 +12,7 @@ public interface ProductController {
     ResponseEntity<?> getById(Long productId);
     ResponseEntity<?> delete(Long productId);
     ResponseEntity<?> update(ProductDto productDto, MultipartFile[] files) throws IOException;
-    ResponseEntity<?> search(int pageNo, int pageSize, String sortBy, String query);
+    ResponseEntity<?> search(int pageNo, int pageSize, String sortBy, String direction, String query, String category);
     ResponseEntity<?> categoryList();
     ResponseEntity<?> subCategoryList(Long categoryId);
     ResponseEntity<?> brandList();

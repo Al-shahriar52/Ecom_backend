@@ -17,7 +17,7 @@ public interface ProductService {
     ProductDto getById(Long productId);
     String delete(Long productId);
     ProductDto update(ProductDto productDto, MultipartFile[] files) throws IOException;
-    ProductResponse search(int pageNo, int pageSize, String sortBy, String query);
+    ProductResponse search(int pageNo, int pageSize, String sortBy, String direction, String query, String category);
 
     List<Category> categoryList();
 

@@ -48,4 +48,6 @@ public class ProductDto {
     private double rating;
 
     private Long numReviews;
+
+    private List<String> images;
 }

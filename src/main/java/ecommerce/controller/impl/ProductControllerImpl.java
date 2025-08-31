@@ -70,10 +70,12 @@ public class ProductControllerImpl implements ProductController {
     public ResponseEntity<?> search(@RequestParam(defaultValue = "0") int pageNo,
                                     @RequestParam(defaultValue = "10") int pageSize,
                                     @RequestParam(defaultValue = "id") String sortBy,
-                                    @RequestParam(defaultValue = "") String query) {
+                                    @RequestParam(defaultValue = "ASC") String sortDir,
+                                    @RequestParam(defaultValue = "") String query,
+                                    @RequestParam(defaultValue = "", required = false) String category) {
 
-        ProductResponse productSearch = productService.search(pageNo, pageSize, sortBy, query);
-        return new ResponseEntity<>(productSearch, HttpStatus.OK);
+        ProductResponse productSearch = productService.search(pageNo, pageSize, sortBy, sortDir, query, category);
+        return new ResponseEntity<>(GenericResponseDto.success("Fetch search result successfully", productSearch, HttpStatus.OK.value()), HttpStatus.OK);
     }
 
     @GetMapping("/categories")
