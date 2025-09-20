@@ -16,5 +16,6 @@ public interface ProductController {
     ResponseEntity<?> categoryList();
     ResponseEntity<?> subCategoryList(Long categoryId);
     ResponseEntity<?> brandList();
+    ResponseEntity<?> getBrandMenu();
     ResponseEntity<?> tagList();
 }

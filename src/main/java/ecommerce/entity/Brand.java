@@ -21,4 +21,8 @@ public class Brand {
     private String name;
 
     private String logoUrl;
+
+    private boolean isTop;
+
+    private String slug;
 }

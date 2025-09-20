@@ -1,5 +1,6 @@
 package ecommerce.service;
 
+import ecommerce.dto.BrandMenuData;
 import ecommerce.dto.ProductDto;
 import ecommerce.dto.SubCategoryDto;
 import ecommerce.dto.pageResponse.ProductResponse;
@@ -24,6 +25,7 @@ public interface ProductService {
     List<SubCategoryDto> subCategoryList(Long categoryId);
 
     List<Brand> brandList();
+    BrandMenuData getBrandMenuData();
 
     List<Tag> tagList();
 }

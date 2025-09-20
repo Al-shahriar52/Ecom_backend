@@ -3,9 +3,7 @@ package ecommerce.service.impl;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.Transformation;
 import com.cloudinary.utils.ObjectUtils;
-import ecommerce.dto.ProductDto;
-import ecommerce.dto.ProductSearchResponseDto;
-import ecommerce.dto.SubCategoryDto;
+import ecommerce.dto.*;
 import ecommerce.dto.pageResponse.ProductResponse;
 import ecommerce.entity.*;
 import ecommerce.exceptionHandling.ResourceNotFound;
@@ -22,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -156,6 +155,53 @@ public class ProductServiceImpl implements ProductService {
         response.setLast(products.isLast());
 
         return response;
+    }
+
+    @Override
+    public BrandMenuData getBrandMenuData() {
+        // 1. Make a SINGLE database call to get all necessary data
+        List<BrandMenuDTO> allBrandData = brandRepository.findAllBrandMenuData();
+
+        // 2. Process the results in memory
+
+        // Filter the list to get only top brands and map them to the TopBrand DTO
+        List<TopBrand> topBrands = allBrandData.stream()
+                .filter(BrandMenuDTO::isTop)
+                .map(this::mapToTopBrand)
+                .collect(Collectors.toList());
+
+        // Map the full list to the AllBrand DTO
+        List<AllBrand> allBrands = allBrandData.stream()
+                .map(this::mapToAllBrand)
+                .collect(Collectors.toList());
+
+        // 3. Assemble the final data object
+        BrandMenuData brandMenuData = new BrandMenuData();
+        brandMenuData.setTopBrands(topBrands);
+        brandMenuData.setAllBrands(allBrands);
+
+        return brandMenuData;
+    }
+
+    // Helper method to convert BrandMenuDTO to a TopBrand DTO
+    private TopBrand mapToTopBrand(BrandMenuDTO dto) {
+        TopBrand topBrand = new TopBrand();
+        topBrand.setId(dto.getId());
+        topBrand.setName(dto.getName());
+        topBrand.setSlug(dto.getSlug());
+        topBrand.setLogoUrl(dto.getLogoUrl());
+        topBrand.setProductCount(dto.getProductCount()); // Now we have the count
+        return topBrand;
+    }
+
+    // Helper method to convert BrandMenuDTO to an AllBrand DTO
+    private AllBrand mapToAllBrand(BrandMenuDTO dto) {
+        AllBrand allBrand = new AllBrand();
+        allBrand.setId(dto.getId());
+        allBrand.setName(dto.getName());
+        allBrand.setSlug(dto.getSlug());
+        allBrand.setProductCount(dto.getProductCount());
+        return allBrand;
     }
 
     private String uploadImage(MultipartFile imageFile) {

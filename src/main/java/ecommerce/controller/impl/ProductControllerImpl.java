@@ -2,6 +2,7 @@ package ecommerce.controller.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ecommerce.controller.ProductController;
+import ecommerce.dto.BrandMenuData;
 import ecommerce.dto.GenericResponseDto;
 import ecommerce.dto.ProductDto;
 import ecommerce.dto.SubCategoryDto;
@@ -97,6 +98,13 @@ public class ProductControllerImpl implements ProductController {
     public ResponseEntity<?> brandList() {
         List<Brand> brands = productService.brandList();
         return new ResponseEntity<>(GenericResponseDto.success("Fetch category successfully", brands, HttpStatus.OK.value()), HttpStatus.OK);
+    }
+
+    @GetMapping("/brandMenu")
+    @Override
+    public ResponseEntity<?> getBrandMenu() {
+        BrandMenuData data = productService.getBrandMenuData();
+        return new ResponseEntity<>(GenericResponseDto.success("Fetch brand menu successfully", data, HttpStatus.OK.value()), HttpStatus.OK);
     }
 
     @GetMapping("/tag")
