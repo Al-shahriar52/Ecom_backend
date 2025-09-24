@@ -18,9 +18,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             "LEFT JOIN SubCategory sc on sc.id=p.subCategory.id " +
             "LEFT JOIN Tag t on t.id=p.tag.id " +
             "WHERE p.name LIKE %:query% " +
-            "AND (:category IS NULL OR :category = '' OR c.name = :category) " +
+            "AND (:categoryId IS NULL OR c.id = :categoryId) " +
+            "AND (:brandId IS NULL OR b.id = :brandId) " +
             "GROUP BY p.id, p.name, p.description, b.name, c.name, sc.name, t.name, " +
             "p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews")
-    Page<ProductSearchResponseDto> search(Pageable pageable, String query, String category);
+    Page<ProductSearchResponseDto> search(Pageable pageable, String query, Long categoryId, Long brandId);
 
 }

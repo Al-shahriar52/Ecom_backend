@@ -73,9 +73,10 @@ public class ProductControllerImpl implements ProductController {
                                     @RequestParam(defaultValue = "id") String sortBy,
                                     @RequestParam(defaultValue = "ASC") String sortDir,
                                     @RequestParam(defaultValue = "") String query,
-                                    @RequestParam(defaultValue = "", required = false) String category) {
+                                    @RequestParam(required = false) Long categoryId,
+                                    @RequestParam(required = false) Long brandId) {
 
-        ProductResponse productSearch = productService.search(pageNo, pageSize, sortBy, sortDir, query, category);
+        ProductResponse productSearch = productService.search(pageNo, pageSize, sortBy, sortDir, query, categoryId, brandId);
         return new ResponseEntity<>(GenericResponseDto.success("Fetch search result successfully", productSearch, HttpStatus.OK.value()), HttpStatus.OK);
     }
 
