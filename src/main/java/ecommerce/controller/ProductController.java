@@ -14,7 +14,9 @@ public interface ProductController {
     ResponseEntity<?> update(ProductDto productDto, MultipartFile[] files) throws IOException;
     ResponseEntity<?> search(int pageNo, int pageSize, String sortBy,
                              String direction, String query,
-                             Long categoryId, Long brandId);
+                             Long categoryId, Long brandId,
+                             Long subCategoryId, Double minPrice,
+                             Double maxPrice);
     ResponseEntity<?> categoryList();
     ResponseEntity<?> subCategoryList(Long categoryId);
     ResponseEntity<?> brandList();

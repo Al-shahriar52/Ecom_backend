@@ -6,13 +6,16 @@ import ecommerce.dto.BrandMenuData;
 import ecommerce.dto.GenericResponseDto;
 import ecommerce.dto.ProductDto;
 import ecommerce.dto.SubCategoryDto;
+import ecommerce.dto.filter.FilterDataResponse;
 import ecommerce.dto.pageResponse.ProductResponse;
 import ecommerce.entity.Brand;
 import ecommerce.entity.Category;
 import ecommerce.entity.Tag;
 import ecommerce.service.ProductService;
+import ecommerce.service.impl.FilterService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -24,13 +27,11 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/product")
+@RequiredArgsConstructor
 public class ProductControllerImpl implements ProductController {
 
     private final ProductService productService;
-
-    public ProductControllerImpl(ProductService productService) {
-        this.productService = productService;
-    }
+    private final FilterService filterService;
 
     @Override
     @PostMapping(value = "/add", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
@@ -74,9 +75,12 @@ public class ProductControllerImpl implements ProductController {
                                     @RequestParam(defaultValue = "ASC") String sortDir,
                                     @RequestParam(defaultValue = "") String query,
                                     @RequestParam(required = false) Long categoryId,
-                                    @RequestParam(required = false) Long brandId) {
+                                    @RequestParam(required = false) Long brandId,
+                                    @RequestParam(required = false) Long subCategoryId,
+                                    @RequestParam(required = false) Double minPrice,
+                                    @RequestParam(required = false) Double maxPrice) {
 
-        ProductResponse productSearch = productService.search(pageNo, pageSize, sortBy, sortDir, query, categoryId, brandId);
+        ProductResponse productSearch = productService.search(pageNo, pageSize, sortBy, sortDir, query, categoryId, brandId, subCategoryId, minPrice, maxPrice);
         return new ResponseEntity<>(GenericResponseDto.success("Fetch search result successfully", productSearch, HttpStatus.OK.value()), HttpStatus.OK);
     }
 
@@ -113,5 +117,13 @@ public class ProductControllerImpl implements ProductController {
     public ResponseEntity<?> tagList() {
         List<Tag> tags = productService.tagList();
         return new ResponseEntity<>(GenericResponseDto.success("Fetch category successfully", tags, HttpStatus.OK.value()), HttpStatus.OK);
+    }
+
+    @GetMapping("/filters")
+    public ResponseEntity<?> getFilters(@RequestParam(required = false) Long brandId,
+                                        @RequestParam(required = false) Double minPrice,
+                                        @RequestParam(required = false) Double maxPrice) {
+        FilterDataResponse filterData = filterService.getFilters(brandId, minPrice, maxPrice);
+        return new ResponseEntity<>(GenericResponseDto.success("Success fully fetch filter data", filterData, HttpStatus.OK.value()), HttpStatus.OK);
     }
 }

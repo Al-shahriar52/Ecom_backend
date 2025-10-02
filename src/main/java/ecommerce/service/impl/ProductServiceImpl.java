@@ -116,12 +116,15 @@ public class ProductServiceImpl implements ProductService {
     public ProductResponse search(int pageNo, int pageSize, String sortBy,
                                   String direction, String query,
                                   Long categoryId,
-                                  Long brandId) {
+                                  Long brandId,
+                                  Long subCategoryId,
+                                  Double minPrice,
+                                  Double maxPrice) {
         Sort sort = direction.equalsIgnoreCase(Sort.Direction.DESC.name())
                 ? Sort.by(sortBy).descending()
                 : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(pageNo, pageSize, sort);
-        Page<ProductSearchResponseDto> products = productRepository.search(pageable, query, categoryId, brandId);
+        Page<ProductSearchResponseDto> products = productRepository.search(pageable, query, categoryId, brandId, subCategoryId, minPrice, maxPrice);
         return getProductResult(products);
     }
 
