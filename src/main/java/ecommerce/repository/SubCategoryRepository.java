@@ -16,8 +16,8 @@ public interface SubCategoryRepository extends JpaRepository<SubCategory, Long> 
     @Query("SELECT new ecommerce.dto.filter.SubCategoryFilterDTO(sc.id, sc.name, COUNT(p.id)) " +
             "FROM Product p JOIN p.subCategory sc " +
             "WHERE sc.category.id = :categoryId " +
-            "AND (:brandId IS NULL OR p.brand.id = :brandId) " + // <-- UPDATED
-            "AND p.discountedPrice BETWEEN :minPrice AND :maxPrice " +
+            "AND (:brandId IS NULL OR p.brand.id = :brandId) " +
+            "AND ((:maxPrice IS NULL AND :minPrice IS NULL) OR (p.discountedPrice BETWEEN :minPrice AND :maxPrice)) " +
             "GROUP BY sc.id, sc.name HAVING COUNT(p.id) > 0 ORDER BY sc.name")
     List<SubCategoryFilterDTO> findSubCategoriesWithCount(
             @Param("brandId") Long brandId,

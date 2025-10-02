@@ -58,10 +58,8 @@ public class FilterService {
         response.setAvailableTags(tags);
 
         // 4. If no brand is selected, also provide a list of all available brands
-        if (brandId == null) {
-            List<BrandFilterDTO> brands = brandRepository.findAllWithProductCount();
-            response.setAvailableBrands(brands);
-        }
+        List<BrandFilterDTO> brands = brandRepository.findAllWithProductCount();
+        response.setAvailableBrands(brands);
 
         return response;
     }
