@@ -40,11 +40,6 @@ public class FilterService {
         Double effectiveMinPrice = (minPrice == null) ? response.getMinPrice() : minPrice;
         Double effectiveMaxPrice = (maxPrice == null) ? response.getMaxPrice() : maxPrice;
 
-        if (effectiveMinPrice == null || effectiveMaxPrice == null) {
-            // No products found, return early
-            return response;
-        }
-
         // 2. Get Categories with counts based on current filters
         List<CategoryFilterDTO> categories = categoryRepository.findCategoriesWithCountAndPrice(brandId, effectiveMinPrice, effectiveMaxPrice);
         categories.forEach(category -> {
