@@ -187,6 +187,11 @@ public class ProductServiceImpl implements ProductService {
         return brandMenuData;
     }
 
+    @Override
+    public List<ProductSearchResponseDto> findNewestArrivals() {
+        return productRepository.findByOrderByCreatedAtDesc();
+    }
+
     // Helper method to convert BrandMenuDTO to a TopBrand DTO
     private TopBrand mapToTopBrand(BrandMenuDTO dto) {
         TopBrand topBrand = new TopBrand();

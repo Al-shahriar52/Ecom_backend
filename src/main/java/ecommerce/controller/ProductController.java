@@ -22,4 +22,5 @@ public interface ProductController {
     ResponseEntity<?> brandList();
     ResponseEntity<?> getBrandMenu();
     ResponseEntity<?> tagList();
+    ResponseEntity<?> findNewestArrivals();
 }

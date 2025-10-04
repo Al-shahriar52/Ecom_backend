@@ -2,6 +2,7 @@ package ecommerce.service;
 
 import ecommerce.dto.BrandMenuData;
 import ecommerce.dto.ProductDto;
+import ecommerce.dto.ProductSearchResponseDto;
 import ecommerce.dto.SubCategoryDto;
 import ecommerce.dto.pageResponse.ProductResponse;
 import ecommerce.entity.Brand;
@@ -32,4 +33,5 @@ public interface ProductService {
     BrandMenuData getBrandMenuData();
 
     List<Tag> tagList();
+    List<ProductSearchResponseDto> findNewestArrivals();
 }

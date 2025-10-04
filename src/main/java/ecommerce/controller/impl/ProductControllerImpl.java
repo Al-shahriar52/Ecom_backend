@@ -2,10 +2,7 @@ package ecommerce.controller.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ecommerce.controller.ProductController;
-import ecommerce.dto.BrandMenuData;
-import ecommerce.dto.GenericResponseDto;
-import ecommerce.dto.ProductDto;
-import ecommerce.dto.SubCategoryDto;
+import ecommerce.dto.*;
 import ecommerce.dto.filter.FilterDataResponse;
 import ecommerce.dto.pageResponse.ProductResponse;
 import ecommerce.entity.Brand;
@@ -125,5 +122,12 @@ public class ProductControllerImpl implements ProductController {
                                         @RequestParam(required = false) Double maxPrice) {
         FilterDataResponse filterData = filterService.getFilters(brandId, minPrice, maxPrice);
         return new ResponseEntity<>(GenericResponseDto.success("Success fully fetch filter data", filterData, HttpStatus.OK.value()), HttpStatus.OK);
+    }
+
+    @GetMapping("/newestArrivals")
+    @Override
+    public ResponseEntity<?> findNewestArrivals() {
+        List<ProductSearchResponseDto> products = productService.findNewestArrivals();
+        return new ResponseEntity<>(GenericResponseDto.success("Fetch newest arrivals successfully", products, HttpStatus.OK.value()), HttpStatus.OK);
     }
 }
