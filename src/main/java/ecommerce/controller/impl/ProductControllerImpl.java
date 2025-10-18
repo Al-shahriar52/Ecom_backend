@@ -3,6 +3,7 @@ package ecommerce.controller.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ecommerce.controller.ProductController;
 import ecommerce.dto.*;
+import ecommerce.dto.details.ProductDetailDto;
 import ecommerce.dto.filter.FilterDataResponse;
 import ecommerce.dto.pageResponse.ProductResponse;
 import ecommerce.entity.Brand;
@@ -129,5 +130,12 @@ public class ProductControllerImpl implements ProductController {
     public ResponseEntity<?> findNewestArrivals() {
         List<ProductSearchResponseDto> products = productService.findNewestArrivals();
         return new ResponseEntity<>(GenericResponseDto.success("Fetch newest arrivals successfully", products, HttpStatus.OK.value()), HttpStatus.OK);
+    }
+
+    @GetMapping("/detail/{productId}")
+    @Override
+    public ResponseEntity<?> getProductDetailById(@PathVariable Long productId) {
+        ProductDetailDto productDetail = productService.getProductDetailById(productId);
+        return new ResponseEntity<>(GenericResponseDto.success("Fetch product detail successfully", productDetail, HttpStatus.OK.value()), HttpStatus.OK);
     }
 }

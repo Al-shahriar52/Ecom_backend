@@ -23,4 +23,5 @@ public interface ProductController {
     ResponseEntity<?> getBrandMenu();
     ResponseEntity<?> tagList();
     ResponseEntity<?> findNewestArrivals();
+    ResponseEntity<?> getProductDetailById(Long productId);
 }

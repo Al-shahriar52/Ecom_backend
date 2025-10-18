@@ -1,6 +1,7 @@
 package ecommerce.repository;
 
 import ecommerce.dto.ProductSearchResponseDto;
+import ecommerce.dto.details.ProductDetailDto;
 import ecommerce.entity.PriceRange;
 import ecommerce.entity.Product;
 import org.springframework.data.domain.Page;
@@ -49,4 +50,17 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             " ORDER BY p.createdAt DESC " +
             "LIMIT 12")
     List<ProductSearchResponseDto> findByOrderByCreatedAtDesc();
+
+    Optional<Product> findBySku(String sku);
+
+    @Query("SELECT new ecommerce.dto.details.ProductDetailDto(p.id, p.name, p.description, b.name, " +
+            "c.name, t.name, p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews) " +
+            "FROM Product p " +
+            "LEFT JOIN Brand b on b.id=p.brand.id " +
+            "LEFT JOIN Category c on c.id=p.category.id " +
+            "LEFT JOIN Tag t on t.id=p.tag.id " +
+            "WHERE p.id = :productId " +
+            "GROUP BY p.id, p.name, p.description, b.name, " +
+            "p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews")
+    ProductDetailDto getProductDetailById(Long productId);
 }

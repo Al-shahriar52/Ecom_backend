@@ -46,7 +46,7 @@ public class Product {
     @Column(unique = true)
     private String sku;
 
-    private double rating;
+    private Double rating;
 
     private Long numReviews;
 
@@ -64,4 +64,6 @@ public class Product {
 
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
 }

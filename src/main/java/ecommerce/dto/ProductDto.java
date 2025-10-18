@@ -45,7 +45,7 @@ public class ProductDto {
     @NotNull
     private String sku;
 
-    private double rating;
+    private Double rating;
 
     private Long numReviews;
 

@@ -1,14 +1,16 @@
 package ecommerce.service.impl;
 
 import com.cloudinary.Cloudinary;
-import com.cloudinary.Transformation;
 import com.cloudinary.utils.ObjectUtils;
 import ecommerce.dto.*;
+import ecommerce.dto.details.ProductDetailDto;
 import ecommerce.dto.pageResponse.ProductResponse;
 import ecommerce.entity.*;
+import ecommerce.exceptionHandling.BadRequestException;
 import ecommerce.exceptionHandling.ResourceNotFound;
 import ecommerce.repository.*;
 import ecommerce.service.ProductService;
+import ecommerce.utils.ImageUtil;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -28,43 +30,37 @@ public class ProductServiceImpl implements ProductService {
 
     private final ModelMapper mapper;
     private final ProductRepository productRepository;
-    private final Cloudinary cloudinary;
     private final CategoryRepository categoryRepository;
     private final SubCategoryRepository subCategoryRepository;
     private final ProductImageRepository productImageRepository;
     private final BrandRepository brandRepository;
     private final TagRepository tagRepository;
+    private final VariationRepository variationRepository;
+    private final ImageUtil imageUtil;
 
     @Override
     public ProductDto add(ProductDto productDto, MultipartFile[] files) throws IOException {
 
         Product product = mapToEntity(productDto);
-        List<ProductImage> productImages = uploadFiles(Arrays.asList(files), product);
+        List<ProductImage> productImages = imageUtil.uploadFiles(Arrays.asList(files), product);
         Product data = productRepository.save(product);
         productImageRepository.saveAll(productImages);
+        productVariationDataSaving(productDto, data);
         return mapToDto(data);
     }
 
-    public String uploadFile(MultipartFile file) throws IOException {
-        Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
-                ObjectUtils.asMap(
-                        "resource_type", "auto",
-                        "quality", "auto",
-                        "fetch_format", "auto"     // Converts to modern formats (like WebP/AVIF if supported)
-                ));
-        return uploadResult.get("secure_url").toString();
-    }
-
-    public List<ProductImage> uploadFiles(List<MultipartFile> files, Product product) throws IOException {
-        List<ProductImage> productImages = new ArrayList<>();
-        for (MultipartFile file : files) {
-            String url = uploadFile(file);
-            ProductImage productImage = new ProductImage();
-            productImage.setProduct(product);
-            productImage.setImageUrl(url);
-            productImages.add(productImage);
+    private void productVariationDataSaving(ProductDto productDto, Product data) {
+        if (productDto.getVariations() != null && !productDto.getVariations().isEmpty()) {
+            List<Variation> variations = new ArrayList<>();
+            for (VariationDto variationDto : productDto.getVariations()) {
+                Variation variation = new Variation();
+                variation.setColor(variationDto.getColor());
+                variation.setSize(variationDto.getSize());
+                variation.setProduct(data);
+                variations.add(variation);
+            }
+            variationRepository.saveAll(variations);
         }
-        return productImages;
     }
 
     @Override
@@ -94,7 +90,7 @@ public class ProductServiceImpl implements ProductService {
         Category category = categoryRepository.findById(productDto.getCategoryId()).orElseThrow(() ->
                 new ResourceNotFound("Category", "id", productDto.getCategoryId()));
 
-        List<ProductImage> imageUrls = uploadFiles(Arrays.asList(files), product);
+        List<ProductImage> imageUrls = imageUtil.uploadFiles(Arrays.asList(files), product);
         productImageRepository.saveAll(imageUrls);
 
         Optional<Brand> brand = brandRepository.findById(productDto.getBrandId());
@@ -192,6 +188,34 @@ public class ProductServiceImpl implements ProductService {
         return productRepository.findByOrderByCreatedAtDesc();
     }
 
+    @Override
+    public ProductDetailDto getProductDetailById(Long productId) {
+
+        ProductDetailDto productDetail = productRepository.getProductDetailById(productId);
+
+        if (productDetail != null) {
+
+            List<ProductImage> imageUrls = productImageRepository.findImageUrlsByProductId(productId);
+            List<String> urls = imageUrls.stream()
+                    .map(ProductImage::getImageUrl)
+                    .toList();
+            productDetail.setImageUrls(urls);
+
+            List<Variation> variations = variationRepository.findByProductId(productId);
+            List<VariationDto> variationDtos = variations.stream().map(variation -> {
+                VariationDto dto = new VariationDto();
+                dto.setColor(variation.getColor());
+                dto.setSize(variation.getSize());
+                return dto;
+            }).collect(Collectors.toList());
+            productDetail.setVariations(variationDtos);
+
+            return productDetail;
+        }else {
+            throw new ResourceNotFound("Product", "id", productId);
+        }
+    }
+
     // Helper method to convert BrandMenuDTO to a TopBrand DTO
     private TopBrand mapToTopBrand(BrandMenuDTO dto) {
         TopBrand topBrand = new TopBrand();
@@ -213,11 +237,13 @@ public class ProductServiceImpl implements ProductService {
         return allBrand;
     }
 
-    private String uploadImage(MultipartFile imageFile) {
-        return "/upload/" + imageFile.getOriginalFilename();
-    }
-
     public Product mapToEntity(ProductDto productDto) {
+
+        Optional<Product> bySku = productRepository.findBySku(productDto.getSku());
+        if (bySku.isPresent()) {
+            throw new BadRequestException("Product with SKU " + productDto.getSku() + " already exists.");
+        }
+
         Brand brand = brandRepository.findById(productDto.getBrandId()).orElseThrow(()->
                 new ResourceNotFound("Brand", "id", productDto.getBrandId()));
 
@@ -228,6 +254,7 @@ public class ProductServiceImpl implements ProductService {
                 new ResourceNotFound("SubCategory", "id", productDto.getSubCategoryId()));
 
         Optional<Tag> tag = tagRepository.findById(productDto.getTagId());
+
         Product product = new Product();
         product.setName(productDto.getName());
         product.setDescription(productDto.getDescription());
@@ -236,7 +263,13 @@ public class ProductServiceImpl implements ProductService {
         product.setStatus(productDto.getStatus());
         product.setDiscountedPrice(productDto.getDiscountedPrice());
         product.setOriginalPrice(productDto.getOriginalPrice());
-        product.setRating(productDto.getRating());
+        if (Objects.nonNull(productDto.getRating())) {
+            product.setNumReviews(1L);
+            product.setRating(productDto.getRating());
+        } else {
+            product.setNumReviews(0L);
+            product.setRating(0.0);
+        }
         product.setCategory(category);
         product.setSubCategory(subCategory);
         tag.ifPresent(product::setTag);

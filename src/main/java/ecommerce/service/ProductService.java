@@ -4,6 +4,7 @@ import ecommerce.dto.BrandMenuData;
 import ecommerce.dto.ProductDto;
 import ecommerce.dto.ProductSearchResponseDto;
 import ecommerce.dto.SubCategoryDto;
+import ecommerce.dto.details.ProductDetailDto;
 import ecommerce.dto.pageResponse.ProductResponse;
 import ecommerce.entity.Brand;
 import ecommerce.entity.Category;
@@ -16,9 +17,13 @@ import java.util.List;
 public interface ProductService {
 
     ProductDto add(ProductDto productDto, MultipartFile[] multipartFile) throws IOException;
+
     ProductDto getById(Long productId);
+
     String delete(Long productId);
+
     ProductDto update(ProductDto productDto, MultipartFile[] files) throws IOException;
+
     ProductResponse search(int pageNo, int pageSize,
                            String sortBy, String direction,
                            String query, Long category,
@@ -30,8 +35,12 @@ public interface ProductService {
     List<SubCategoryDto> subCategoryList(Long categoryId);
 
     List<Brand> brandList();
+
     BrandMenuData getBrandMenuData();
 
     List<Tag> tagList();
+
     List<ProductSearchResponseDto> findNewestArrivals();
+
+    ProductDetailDto getProductDetailById(Long productId);
 }

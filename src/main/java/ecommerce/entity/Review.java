@@ -1,10 +1,15 @@
 package ecommerce.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
 
 @Data
 @Entity
@@ -19,14 +24,15 @@ public class Review {
     @NotNull
     private String name;
 
-    @NotNull
-    private String rating;
+    @Min(value = 1)
+    @Max(value = 5)
+    private Double rating;
 
     @NotNull
     private String comment;
 
-    @NotNull
-    private String createdAt;
+    @CreationTimestamp
+    private LocalDateTime createdAt;
 
     @ManyToOne
     private Product product;
@@ -34,4 +40,7 @@ public class Review {
     @ManyToOne
     private User user;
 
+    private String imageUrl;
+
+    private  boolean isApproved;
 }
