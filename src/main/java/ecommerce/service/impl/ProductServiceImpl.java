@@ -216,6 +216,15 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
+    @Override
+    public List<ProductSearchResponseDto> findSimilarProducts(Long productId) {
+        Product product = productRepository.findById(productId).orElseThrow(() ->
+                new ResourceNotFound("Product", "id", productId));
+
+        Long categoryId = product.getCategory().getId();
+        return productRepository.findByCategoryIdAndIdNotOrderByCreatedAtDesc(categoryId, productId);
+    }
+
     // Helper method to convert BrandMenuDTO to a TopBrand DTO
     private TopBrand mapToTopBrand(BrandMenuDTO dto) {
         TopBrand topBrand = new TopBrand();

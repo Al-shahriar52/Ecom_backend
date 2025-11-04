@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -34,6 +35,7 @@ public class ProductControllerImpl implements ProductController {
     @Override
     @PostMapping(value = "/add", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> add(@Valid @RequestPart("productDto") String productDtoString, @RequestPart("files") MultipartFile[] files) throws IOException {
 
         ObjectMapper mapper = new ObjectMapper();
@@ -137,5 +139,12 @@ public class ProductControllerImpl implements ProductController {
     public ResponseEntity<?> getProductDetailById(@PathVariable Long productId) {
         ProductDetailDto productDetail = productService.getProductDetailById(productId);
         return new ResponseEntity<>(GenericResponseDto.success("Fetch product detail successfully", productDetail, HttpStatus.OK.value()), HttpStatus.OK);
+    }
+
+    @GetMapping("/similar/{productId}")
+    @Override
+    public ResponseEntity<?> findSimilarProductById(@PathVariable Long productId) {
+        List<ProductSearchResponseDto> products = productService.findSimilarProducts(productId);
+        return new ResponseEntity<>(GenericResponseDto.success("Fetch newest arrivals successfully", products, HttpStatus.OK.value()), HttpStatus.OK);
     }
 }

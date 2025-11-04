@@ -2,6 +2,7 @@ package ecommerce.repository;
 
 import ecommerce.dto.ProductSearchResponseDto;
 import ecommerce.dto.details.ProductDetailDto;
+import ecommerce.dto.frequentlyBought.FrequentlyBoughtItemDto;
 import ecommerce.entity.PriceRange;
 import ecommerce.entity.Product;
 import org.springframework.data.domain.Page;
@@ -63,4 +64,18 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             "GROUP BY p.id, p.name, p.description, b.name, " +
             "p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews")
     ProductDetailDto getProductDetailById(Long productId);
+
+    @Query("SELECT new ecommerce.dto.ProductSearchResponseDto(p.id, p.name, p.description, b.name, c.name, sc.name, " +
+            "t.name, p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, MIN(pi.imageUrl)) " +
+            "FROM Product p " +
+            "LEFT JOIN ProductImage pi on pi.product.id = p.id " +
+            "LEFT JOIN Brand b on b.id=p.brand.id " +
+            "LEFT JOIN Category c on c.id=p.category.id " +
+            "LEFT JOIN SubCategory sc on sc.id=p.subCategory.id " +
+            "LEFT JOIN Tag t on t.id=p.tag.id " +
+            "WHERE p.category.id = :categoryId AND p.id <> :excludeProductId " +
+            "GROUP BY p.id, p.name, p.description, b.name, c.name, sc.name, t.name, " +
+            "p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews " +
+            "ORDER BY p.createdAt DESC LIMIT 8")
+    List<ProductSearchResponseDto> findByCategoryIdAndIdNotOrderByCreatedAtDesc(Long categoryId, Long excludeProductId);
 }

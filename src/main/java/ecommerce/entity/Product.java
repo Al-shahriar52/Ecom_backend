@@ -10,7 +10,9 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @AllArgsConstructor
@@ -66,4 +68,12 @@ public class Product {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "product_frequently_bought_together",
+            joinColumns = @JoinColumn(name = "main_product_id"),
+            inverseJoinColumns = @JoinColumn(name = "paired_product_id")
+    )
+    private Set<Product> frequentlyBoughtTogether = new HashSet<>();
 }

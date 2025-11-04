@@ -43,4 +43,6 @@ public interface ProductService {
     List<ProductSearchResponseDto> findNewestArrivals();
 
     ProductDetailDto getProductDetailById(Long productId);
+
+    List<ProductSearchResponseDto> findSimilarProducts(Long productId);
 }
