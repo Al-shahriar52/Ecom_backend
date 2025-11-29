@@ -1,6 +1,7 @@
 package ecommerce.repository;
 
 import ecommerce.dto.ProductSearchResponseDto;
+import ecommerce.dto.cart.CartItemDto;
 import ecommerce.dto.details.ProductDetailDto;
 import ecommerce.dto.frequentlyBought.FrequentlyBoughtItemDto;
 import ecommerce.entity.PriceRange;
@@ -78,4 +79,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             "p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews " +
             "ORDER BY p.createdAt DESC LIMIT 8")
     List<ProductSearchResponseDto> findByCategoryIdAndIdNotOrderByCreatedAtDesc(Long categoryId, Long excludeProductId);
+
+    @Query("SELECT new ecommerce.dto.cart.CartItemDto(p.id, p.name, p.discountedPrice, MIN(pi.imageUrl)) " +
+            "FROM Product p " +
+            "LEFT JOIN ProductImage pi ON pi.product.id = p.id " +
+            "WHERE p.id IN :ids " +
+            "GROUP BY p.id, p.name, p.discountedPrice")
+    List<CartItemDto> findProductDetailsByIdIn(@Param("ids") List<Long> ids);
 }

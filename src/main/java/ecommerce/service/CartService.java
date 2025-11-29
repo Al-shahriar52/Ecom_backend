@@ -1,11 +1,18 @@
 package ecommerce.service;
 
-import ecommerce.dto.CartDto;
+import ecommerce.dto.cart.AddToCartRequestDto;
+import ecommerce.dto.cart.CartItemDto;
+import ecommerce.dto.cart.CartItemListDto;
+import ecommerce.dto.cart.CartUpdateRequestDto;
 import ecommerce.dto.pageResponse.CartResponse;
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.List;
 
 public interface CartService {
 
-    CartDto add(CartDto cartDto, Long userId, Long productId);
-    CartResponse getAll(int pageNo, int pageSize, String sortBy);
-    String delete(Long cartId);
+    AddToCartRequestDto addItemToCart(AddToCartRequestDto requestDto, HttpServletRequest servletRequest);
+    CartItemListDto getCart(HttpServletRequest servletRequest);
+    Long delete(Long cartId, HttpServletRequest servletRequest);
+    CartUpdateRequestDto updateQuantity(CartUpdateRequestDto requestDto, HttpServletRequest servletRequest);
 }

@@ -1,96 +1,149 @@
 package ecommerce.service.impl;
 
-import ecommerce.dto.CartDto;
-import ecommerce.dto.pageResponse.CartResponse;
+import ecommerce.dto.cart.AddToCartRequestDto;
+import ecommerce.dto.cart.CartItemDto;
+import ecommerce.dto.cart.CartItemListDto;
+import ecommerce.dto.cart.CartUpdateRequestDto;
 import ecommerce.entity.Cart;
+import ecommerce.entity.CartItem;
 import ecommerce.entity.Product;
 import ecommerce.entity.User;
 import ecommerce.exceptionHandling.ResourceNotFound;
+import ecommerce.exceptionHandling.ResourceNotFoundException;
+import ecommerce.repository.CartItemRepository;
 import ecommerce.repository.CartRepository;
 import ecommerce.repository.ProductRepository;
-import ecommerce.repository.UserRepository;
 import ecommerce.service.CartService;
-import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import ecommerce.utils.TokenUtil;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class CartServiceImpl implements CartService {
 
-    private final UserRepository userRepository;
-
     private final ProductRepository productRepository;
-    private final ModelMapper mapper;
 
     private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
 
-    public CartServiceImpl(UserRepository userRepository, ProductRepository productRepository,
-                           ModelMapper mapper, CartRepository cartRepository) {
+    private final TokenUtil tokenUtil;
 
-        this.userRepository = userRepository;
+    public CartServiceImpl(ProductRepository productRepository, CartRepository cartRepository,
+                           CartItemRepository cartItemRepository, TokenUtil tokenUtil) {
         this.productRepository = productRepository;
-        this.mapper = mapper;
         this.cartRepository = cartRepository;
+        this.cartItemRepository = cartItemRepository;
+        this.tokenUtil = tokenUtil;
     }
 
     @Override
-    public CartDto add(CartDto cartDto, Long userId, Long productId) {
+    @Transactional
+    public AddToCartRequestDto addItemToCart(AddToCartRequestDto addItemDTO, HttpServletRequest servletRequest) {
+        String authToken = servletRequest.getHeader("Authorization");
 
-        Cart cart = mapToEntity(cartDto);
-        User user = userRepository.findById(userId).orElseThrow(()->
-                new ResourceNotFound("User", "id", userId));
+        Cart cart = getOrCreateCartOfCurrentUser(authToken);
 
-        Product product = productRepository.findById(productId).orElseThrow(()->
-                new ResourceNotFound("Product", "id", productId));
+        Product product = productRepository.findById(addItemDTO.getProductId())
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
-        cart.setUser(user);
-        cart.setProduct(product);
-        Cart saveCart = cartRepository.save(cart);
+        // Check if the item is already in the cart
+        Optional<CartItem> existingItem = cartItemRepository.findByCartAndProduct(cart, product);
 
-        return mapToDto(saveCart);
+        if (existingItem.isPresent()) {
+            // Update quantity
+            CartItem item = existingItem.get();
+            item.setQuantity(item.getQuantity() + addItemDTO.getQuantity());
+            cartItemRepository.save(item);
+        } else {
+            CartItem newItem = new CartItem();
+            newItem.setProduct(product);
+            newItem.setQuantity(addItemDTO.getQuantity());
+            newItem.setCart(cart);
+            newItem.setActive(true);
+            cartItemRepository.save(newItem);
+        }
+
+        return addItemDTO;
+    }
+
+    private Cart getOrCreateCartOfCurrentUser(String authToken) {
+        User user = tokenUtil.extractUserInfo(authToken);
+        // Find the cart by user. If it doesn't exist, create a new one.
+        return cartRepository.findByUser(user).orElseGet(() -> {
+            Cart newCart = new Cart();
+            newCart.setUser(user);
+            newCart.setActive(true);
+            return cartRepository.save(newCart);
+        });
+    }
+
+
+
+    @Override
+    public CartItemListDto getCart(HttpServletRequest servletRequest) {
+
+        String authToken = servletRequest.getHeader("Authorization");
+        User user = tokenUtil.extractUserInfo(authToken);
+
+        Cart cart = cartRepository.findByUser(user).orElseThrow(() ->
+                new ResourceNotFound("Cart", "user", user.getId()));
+
+        List<CartItem> cartItems = cartItemRepository.findByCartAndIsActiveTrue(cart);
+        List<Long> productIds = cartItems.stream()
+                .map(item -> item.getProduct().getId())
+                .toList();
+        List<CartItemDto> productDetails = productRepository.findProductDetailsByIdIn(productIds);
+
+        CartItemListDto cartItemListDto = new CartItemListDto();
+        for ( CartItemDto itemDto : productDetails) {
+            for (CartItem cartItem : cartItems) {
+                if (itemDto.getProductId().equals(cartItem.getProduct().getId())) {
+                    itemDto.setQuantity(cartItem.getQuantity());
+                    itemDto.setItemTotalPrice(itemDto.getPrice() * cartItem.getQuantity());
+                    itemDto.setCartItemId(cartItem.getId());
+                    break;
+                }
+            }
+        }
+
+        double totalPrice = productDetails.stream()
+                .mapToDouble(CartItemDto::getItemTotalPrice)
+                .sum();
+        cartItemListDto.setTotalPrice(totalPrice);
+        cartItemListDto.setItems(productDetails);
+        return cartItemListDto;
     }
 
     @Override
-    public CartResponse getAll(int pageNo, int pageSize, String sortBy) {
+    public Long delete(Long cartItemId, HttpServletRequest servletRequest) {
+        String authToken = servletRequest.getHeader("Authorization");
+        User user = tokenUtil.extractUserInfo(authToken);
 
-        Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
-        Page<Cart> carts = cartRepository.findAll(pageable);
-
-        List<Cart> cartList = carts.getContent();
-        List<CartDto> content = cartList.stream().map(this::mapToDto).toList();
-
-        CartResponse response = new CartResponse();
-        response.setContent(content);
-        response.setPageNo(carts.getNumber());
-        response.setPageSize(carts.getSize());
-        response.setTotalPages(carts.getTotalPages());
-        response.setTotalElements(carts.getTotalElements());
-        response.setLast(carts.isLast());
-
-        return response;
+        CartItem cartItem = cartItemRepository.findById(cartItemId).orElseThrow(() ->
+                new ResourceNotFound("Cart Item", "id", cartItemId));
+        if (!cartItem.getCart().getUser().getId().equals(user.getId())) {
+            throw new ResourceNotFoundException("Cart Item not found for the user");
+        }
+        cartItemRepository.delete(cartItem);
+        return cartItemId;
     }
 
     @Override
-    public String delete(Long cartId) {
-        Cart cart = cartRepository.findById(cartId).orElseThrow(()->
-                new ResourceNotFound("Cart", "id", cartId));
+    public CartUpdateRequestDto updateQuantity(CartUpdateRequestDto requestDto, HttpServletRequest servletRequest) {
+        String authToken = servletRequest.getHeader("Authorization");
+        User user = tokenUtil.extractUserInfo(authToken);
 
-        cartRepository.delete(cart);
-        return "Your cart item name : "+cart.getProduct().getName()+" is successfully deleted.";
-    }
-
-    public Cart mapToEntity(CartDto cartDto) {
-
-        return mapper.map(cartDto, Cart.class);
-    }
-
-    public CartDto mapToDto(Cart cart) {
-
-        return mapper.map(cart, CartDto.class);
+        CartItem cartItem = cartItemRepository.findById(requestDto.getCartItemId()).orElseThrow(() ->
+                new ResourceNotFound("Cart Item", "id", requestDto.getCartItemId()));
+        if (!cartItem.getCart().getUser().getId().equals(user.getId())) {
+            throw new ResourceNotFoundException("Cart Item not found for the user");
+        }
+        cartItem.setQuantity(requestDto.getQuantity());
+        cartItemRepository.save(cartItem);
+        return requestDto;
     }
 }
