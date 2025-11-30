@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,8 +22,8 @@ public class AddressServiceImpl implements AddressService {
     private final TokenUtil tokenUtil;
     @Override
     public AddressResponseDto add(AddressRequestDto request, HttpServletRequest servletRequest) {
-        String authToken = servletRequest.getHeader("Authorization");
-        User user = tokenUtil.extractUserInfo(authToken);
+
+        User user = tokenUtil.extractUserInfo(servletRequest);
 
         Address address = new Address();
         address.setAddressType(request.getAddressType());
@@ -45,15 +44,13 @@ public class AddressServiceImpl implements AddressService {
 
     @Override
     public List<AddressResponseDto> getAllByUser(HttpServletRequest servletRequest) {
-        String authToken = servletRequest.getHeader("Authorization");
-        User user = tokenUtil.extractUserInfo(authToken);
+        User user = tokenUtil.extractUserInfo(servletRequest);
         return addressRepository.findAllByUserId(user.getId());
     }
 
     @Override
     public AddressResponseDto update(AddressRequestDto request, HttpServletRequest servletRequest) {
-        String authToken = servletRequest.getHeader("Authorization");
-        User user = tokenUtil.extractUserInfo(authToken);
+        User user = tokenUtil.extractUserInfo(servletRequest);
 
         if (request.getId() != null && user != null) {
             Address address = addressRepository.findByIdAndUserId(request.getId() , user.getId());

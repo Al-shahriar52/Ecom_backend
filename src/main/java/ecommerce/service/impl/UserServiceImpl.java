@@ -44,8 +44,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto getById(HttpServletRequest servletRequest) {
-        String authorization = servletRequest.getHeader("Authorization");
-        User userInfo = tokenUtil.extractUserInfo(authorization);
+        User userInfo = tokenUtil.extractUserInfo(servletRequest);
         User user = userRepository.findById(userInfo.getId()).orElseThrow(()->
                 new ResourceNotFound("User","id", userInfo.getId()));
         return mapToDto(user);
@@ -66,8 +65,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDto update(UserDto userDto, HttpServletRequest servletRequest) {
 
-        String authToken = servletRequest.getHeader("Authorization");
-        User userInfo = tokenUtil.extractUserInfo(authToken);
+        User userInfo = tokenUtil.extractUserInfo(servletRequest);
         User user = userRepository.findById(userInfo.getId()).orElseThrow(()->
                 new ResourceNotFound("User", "id", userInfo.getId()));
 

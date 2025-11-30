@@ -53,8 +53,7 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     public ReviewDto add(ReviewDto reviewDto, HttpServletRequest servletRequest, MultipartFile file) throws IOException {
 
-        String authToken = servletRequest.getHeader("Authorization");
-        User userInfo = tokenUtil.extractUserInfo(authToken);
+        User userInfo = tokenUtil.extractUserInfo(servletRequest);
 
         Product product = productRepository.findById(reviewDto.getProductId()).orElseThrow(()->
                 new ResourceNotFound("Product", "id", reviewDto.getProductId()));

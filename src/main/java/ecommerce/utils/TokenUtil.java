@@ -5,6 +5,8 @@ import ecommerce.entity.User;
 import ecommerce.exceptionHandling.BadRequestException;
 import ecommerce.exceptionHandling.UnauthorizedException;
 import ecommerce.repository.UserRepository;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -15,21 +17,44 @@ import java.util.Optional;
 public class TokenUtil {
     private final JwtService jwtService;
     private final UserRepository userRepository;
-    public User extractUserInfo(String authToken) {
-        if (authToken != null && authToken.startsWith("Bearer ")) {
-            String jwt = authToken.substring(7);
-            String username = jwtService.extractUsername(jwt);
 
-            Optional<User> user = userRepository.findByEmailOrPhoneAndStatusIsTrue(username, username);
+    /**
+     * EXTRACT USER INFO
+     * Now accepts the Request object so it can check Cookies AND Headers
+     */
+    public User extractUserInfo(HttpServletRequest request) {
+        String jwt = resolveToken(request);
 
-            if (user.isPresent()) {
-                return user.get();
-            }else {
-                throw new BadRequestException("User not found");
-            }
-
-        }else {
-            throw new UnauthorizedException("Invalid token");
+        if (jwt == null) {
+            throw new UnauthorizedException("Token not found in Cookie or Header");
         }
+
+        // Now we have the raw JWT (no "Bearer " prefix)
+        String username = jwtService.extractUsername(jwt);
+
+        return userRepository.findByEmailOrPhoneAndStatusIsTrue(username, username)
+                .orElseThrow(() -> new BadRequestException("User not found"));
+    }
+
+    /**
+     * HELPER: Finds the raw JWT string
+     */
+    private String resolveToken(HttpServletRequest request) {
+        // 1. Priority: Check for "accessToken" Cookie (Frontend Web)
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("accessToken".equals(cookie.getName())) {
+                    return cookie.getValue(); // Cookies usually contain RAW token
+                }
+            }
+        }
+
+        // 2. Fallback: Check Authorization Header (Mobile / Postman)
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7); // Remove "Bearer " prefix
+        }
+
+        return null;
     }
 }
