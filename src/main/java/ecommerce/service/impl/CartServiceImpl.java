@@ -43,9 +43,7 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public AddToCartRequestDto addItemToCart(AddToCartRequestDto addItemDTO, HttpServletRequest servletRequest) {
-        String authToken = servletRequest.getHeader("Authorization");
-
-        Cart cart = getOrCreateCartOfCurrentUser(authToken);
+        Cart cart = getOrCreateCartOfCurrentUser(servletRequest);
 
         Product product = productRepository.findById(addItemDTO.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
@@ -70,8 +68,8 @@ public class CartServiceImpl implements CartService {
         return addItemDTO;
     }
 
-    private Cart getOrCreateCartOfCurrentUser(String authToken) {
-        User user = tokenUtil.extractUserInfo(authToken);
+    private Cart getOrCreateCartOfCurrentUser(HttpServletRequest servletRequest) {
+        User user = tokenUtil.extractUserInfo(servletRequest);
         // Find the cart by user. If it doesn't exist, create a new one.
         return cartRepository.findByUser(user).orElseGet(() -> {
             Cart newCart = new Cart();
@@ -86,8 +84,7 @@ public class CartServiceImpl implements CartService {
     @Override
     public CartItemListDto getCart(HttpServletRequest servletRequest) {
 
-        String authToken = servletRequest.getHeader("Authorization");
-        User user = tokenUtil.extractUserInfo(authToken);
+        User user = tokenUtil.extractUserInfo(servletRequest);
 
         Cart cart = cartRepository.findByUser(user).orElseThrow(() ->
                 new ResourceNotFound("Cart", "user", user.getId()));
@@ -120,8 +117,7 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public Long delete(Long cartItemId, HttpServletRequest servletRequest) {
-        String authToken = servletRequest.getHeader("Authorization");
-        User user = tokenUtil.extractUserInfo(authToken);
+        User user = tokenUtil.extractUserInfo(servletRequest);
 
         CartItem cartItem = cartItemRepository.findById(cartItemId).orElseThrow(() ->
                 new ResourceNotFound("Cart Item", "id", cartItemId));
@@ -134,8 +130,7 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public CartUpdateRequestDto updateQuantity(CartUpdateRequestDto requestDto, HttpServletRequest servletRequest) {
-        String authToken = servletRequest.getHeader("Authorization");
-        User user = tokenUtil.extractUserInfo(authToken);
+        User user = tokenUtil.extractUserInfo(servletRequest);
 
         CartItem cartItem = cartItemRepository.findById(requestDto.getCartItemId()).orElseThrow(() ->
                 new ResourceNotFound("Cart Item", "id", requestDto.getCartItemId()));

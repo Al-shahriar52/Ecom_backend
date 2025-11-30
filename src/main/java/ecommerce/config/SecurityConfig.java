@@ -32,6 +32,7 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .logout(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/auth/**",
                         "/api/v1/location/**",
@@ -47,6 +48,7 @@ public class SecurityConfig {
                         "/api/v1/review/product/{productId}",
                         "/api/v1/frequently-bought/get/product/{productId}",
                         "/api/v1/product/similar/{productId}",
+                        "/api/v1/user/refreshAccessToken",
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
                         "/swagger-ui.html")

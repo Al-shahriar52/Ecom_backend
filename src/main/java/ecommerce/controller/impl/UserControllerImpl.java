@@ -10,10 +10,14 @@ import ecommerce.service.AuthService;
 import ecommerce.service.UserService;
 import ecommerce.service.impl.TokenBlacklistService;
 import ecommerce.utils.TokenUtil;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,7 +30,6 @@ public class UserControllerImpl implements UserController {
     private final JwtService jwtService;
     private final TokenBlacklistService tokenBlacklistService;
     private final AuthService authService;
-    private final TokenUtil tokenUtil;
 
     @Override
     @PostMapping("/add")
@@ -73,24 +76,41 @@ public class UserControllerImpl implements UserController {
 
     @PostMapping("/logout")
     @Override
-    public ResponseEntity<?> logout(HttpServletRequest request) {
-        final String authHeader = request.getHeader("Authorization");
+    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse servletResponse) {
+        String token = null;
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("accessToken".equals(cookie.getName())) {
+                    token = cookie.getValue();
+                    break;
+                }
+            }
+        }
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String jwt = authHeader.substring(7);
+        if (token != null && token.startsWith("Bearer ")) {
+            String jwt = token.substring(7);
             String jti = jwtService.extractJti(jwt);
             tokenBlacklistService.blacklistToken(jti);
             return new ResponseEntity<>(GenericResponseDto.success("Successfully logged out.", null, HttpStatus.OK.value()), HttpStatus.OK);
         }
 
+        ResponseCookie cleanAccess = ResponseCookie.from("accessToken", "")
+                .httpOnly(true).secure(false).path("/").maxAge(0).build();
+
+        ResponseCookie cleanRefresh = ResponseCookie.from("refreshToken", "")
+                .httpOnly(true).secure(false).path("/api/v1/user/refreshAccessToken").maxAge(0).build();
+
+        // Add "Set-Cookie" headers to the response
+        servletResponse.addHeader(HttpHeaders.SET_COOKIE, cleanAccess.toString());
+        servletResponse.addHeader(HttpHeaders.SET_COOKIE, cleanRefresh.toString());
         return new ResponseEntity<>(GenericResponseDto.error("Forbidden", "Access token required.", HttpStatus.FORBIDDEN.value()), HttpStatus.FORBIDDEN);
     }
 
     @PostMapping("/refreshAccessToken")
     public ResponseEntity<?> refreshToken(
-            HttpServletRequest request
+            HttpServletRequest request, HttpServletResponse servletResponse
     ) {
-        LoginResponse response = authService.refreshToken(request);
+        LoginResponse response = authService.refreshToken(request, servletResponse);
         if (response == null) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
         }
