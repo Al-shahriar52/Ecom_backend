@@ -8,6 +8,7 @@ import ecommerce.entity.Cart;
 import ecommerce.entity.CartItem;
 import ecommerce.entity.Product;
 import ecommerce.entity.User;
+import ecommerce.exceptionHandling.BadRequestException;
 import ecommerce.exceptionHandling.ResourceNotFound;
 import ecommerce.exceptionHandling.ResourceNotFoundException;
 import ecommerce.repository.CartItemRepository;
@@ -47,6 +48,10 @@ public class CartServiceImpl implements CartService {
 
         Product product = productRepository.findById(addItemDTO.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        if (product.getQuantity() < addItemDTO.getQuantity()) {
+            throw new BadRequestException("Not enough stock for product: " + product.getName());
+        }
 
         // Check if the item is already in the cart
         Optional<CartItem> existingItem = cartItemRepository.findByCartAndProduct(cart, product);
@@ -140,5 +145,42 @@ public class CartServiceImpl implements CartService {
         cartItem.setQuantity(requestDto.getQuantity());
         cartItemRepository.save(cartItem);
         return requestDto;
+    }
+
+    @Override
+    public List<AddToCartRequestDto> addMultipleItemsToCart(List<AddToCartRequestDto> requestDtos, HttpServletRequest servletRequest) {
+        User user = tokenUtil.extractUserInfo(servletRequest);
+
+        Cart cart = cartRepository.findByUser(user).orElseGet(() -> {
+            Cart newCart = new Cart();
+            newCart.setUser(user);
+            return cartRepository.save(newCart);
+        });
+
+        for (AddToCartRequestDto itemRequest : requestDtos) {
+            Product product = productRepository.findById(itemRequest.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Product not found"));
+
+            if (product.getQuantity() < itemRequest.getQuantity()) {
+                throw new RuntimeException("Not enough stock for product: " + product.getName());
+            }
+
+            // Check if item exists in cart
+            Optional<CartItem> existingItem = cartItemRepository.findByCartAndProduct(cart, product);
+
+            if (existingItem.isPresent()) {
+                CartItem item = existingItem.get();
+                item.setQuantity(item.getQuantity() + itemRequest.getQuantity());
+                cartItemRepository.save(item);
+            } else {
+                CartItem newItem = new CartItem();
+                newItem.setCart(cart);
+                newItem.setProduct(product);
+                newItem.setQuantity(itemRequest.getQuantity());
+                newItem.setActive(true);
+                cartItemRepository.save(newItem);
+            }
+        }
+        return requestDtos;
     }
 }

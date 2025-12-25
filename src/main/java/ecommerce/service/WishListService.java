@@ -1,11 +1,11 @@
 package ecommerce.service;
 
-import ecommerce.dto.WishListDto;
 import ecommerce.dto.pageResponse.WishListResponse;
+import jakarta.servlet.http.HttpServletRequest;
 
 public interface WishListService {
 
-    WishListDto add(WishListDto wishListDto, Long userId, Long productId);
-    WishListResponse getAll(int pageNo, int pageSize, String sortBy);
-    String delete(Long Id);
+    Long add(Long productId, HttpServletRequest servletRequest);
+    WishListResponse getAll(HttpServletRequest servletRequest);
+    Long delete(Long productId, HttpServletRequest servletRequest);
 }

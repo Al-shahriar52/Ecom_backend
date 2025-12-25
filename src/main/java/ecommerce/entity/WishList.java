@@ -4,6 +4,10 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.cglib.core.Local;
+
+import java.time.LocalDateTime;
 
 @Entity
 @AllArgsConstructor
@@ -20,4 +24,7 @@ public class WishList {
 
     @ManyToOne
     private Product product;
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
 }

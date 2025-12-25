@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/cart")
 public class CartControllerImpl implements CartController {
@@ -51,5 +53,12 @@ public class CartControllerImpl implements CartController {
     public ResponseEntity<?> updateQuantity(@Valid @RequestBody CartUpdateRequestDto requestDto, HttpServletRequest servletRequest) {
         CartUpdateRequestDto response = cartService.updateQuantity(requestDto, servletRequest);
         return new ResponseEntity<>(GenericResponseDto.success("Cart Item updated successfully", response, HttpStatus.OK.value()), HttpStatus.OK);
+    }
+
+    @PostMapping("/add-multiple")
+    public ResponseEntity<?> addMultipleItems(@Valid @RequestBody List<AddToCartRequestDto> requestDtos, HttpServletRequest servletRequest) {
+
+        List<AddToCartRequestDto> cartItems = cartService.addMultipleItemsToCart(requestDtos, servletRequest);
+        return new ResponseEntity<>(GenericResponseDto.success("Items added successfully", cartItems, HttpStatus.OK.value()), HttpStatus.CREATED);
     }
 }

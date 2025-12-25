@@ -1,96 +1,91 @@
 package ecommerce.service.impl;
 
 import ecommerce.dto.WishListDto;
+import ecommerce.dto.cart.CartItemDto;
 import ecommerce.dto.pageResponse.WishListResponse;
 import ecommerce.entity.Product;
 import ecommerce.entity.User;
 import ecommerce.entity.WishList;
-import ecommerce.exceptionHandling.ResourceNotFound;
+import ecommerce.exceptionHandling.BadRequestException;
+import ecommerce.exceptionHandling.ResourceNotFoundException;
 import ecommerce.repository.ProductRepository;
-import ecommerce.repository.UserRepository;
 import ecommerce.repository.WishListRepository;
 import ecommerce.service.WishListService;
+import ecommerce.utils.TokenUtil;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class WishListServiceImpl implements WishListService {
 
-    private final UserRepository userRepository;
-
     private final ProductRepository productRepository;
-
     private final WishListRepository wishListRepository;
-
     private final ModelMapper mapper;
+    private final TokenUtil tokenUtil;
 
-    public WishListServiceImpl(UserRepository userRepository, ProductRepository productRepository,
-                               WishListRepository wishListRepository, ModelMapper mapper) {
-        this.userRepository = userRepository;
-        this.productRepository = productRepository;
-        this.wishListRepository = wishListRepository;
-        this.mapper = mapper;
+    @Override
+    public Long add(Long productId, HttpServletRequest servletRequest) {
+
+        User user = tokenUtil.extractUserInfo(servletRequest);
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        if (wishListRepository.findByUserAndProductId(user, productId).isPresent()) {
+            throw new BadRequestException("Item already in wishlist");
+        }
+
+        WishList wishlist = new WishList();
+        wishlist.setUser(user);
+        wishlist.setProduct(product);
+        wishListRepository.save(wishlist);
+
+        return productId;
     }
 
     @Override
-    public WishListDto add(WishListDto wishListDto, Long userId, Long productId) {
+    public WishListResponse getAll(HttpServletRequest servletRequest) {
 
-        WishList wishList = mapToEntity(wishListDto);
+        User user = tokenUtil.extractUserInfo(servletRequest);
 
-        User user = userRepository.findById(userId).orElseThrow(()->
-                new ResourceNotFound("User", "id", userId));
+        List<WishList> wishList = wishListRepository.findByUser(user);
 
-        Product product = productRepository.findById(productId).orElseThrow(()->
-                new ResourceNotFound("Product", "id", productId));
-
-        wishList.setUser(user);
-        wishList.setProduct(product);
-        wishListRepository.save(wishList);
-
-        return mapToDto(wishList);
-    }
-
-    @Override
-    public WishListResponse getAll(int pageNo, int pageSize, String sortBy) {
-
-        Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by(sortBy));
-        Page<WishList> wishLists = wishListRepository.findAll(pageable);
-
-        List<WishList> lists = wishLists.getContent();
-        List<WishListDto> content = lists.stream().map(this::mapToDto).toList();
+        List<Long> productIds = wishList.stream().map(wish -> wish.getProduct().getId()).toList();
+        List<CartItemDto> productDetails = productRepository.findProductDetailsByIdIn(productIds);
 
         WishListResponse response = new WishListResponse();
-        response.setContent(content);
-        response.setPageNo(wishLists.getNumber());
-        response.setPageSize(wishLists.getSize());
-        response.setTotalPages(wishLists.getTotalPages());
-        response.setTotalElements(wishLists.getTotalElements());
-        response.setLast(wishLists.isLast());
-
+        List<WishListDto> items = new ArrayList<>();
+        for ( CartItemDto itemDto : productDetails) {
+            for (WishList wish : wishList) {
+                if (itemDto.getProductId().equals(wish.getProduct().getId())) {
+                    WishListDto wishListDto = new WishListDto();
+                    wishListDto.setWishId(wish.getId());
+                    wishListDto.setPrice(itemDto.getPrice());
+                    wishListDto.setProductId(itemDto.getProductId());
+                    wishListDto.setProductName(itemDto.getName());
+                    wishListDto.setImageUrl(itemDto.getImageUrl());
+                    items.add(wishListDto);
+                    break;
+                }
+            }
+        }
+        response.setItems(items);
         return response;
     }
 
     @Override
-    public String delete(Long id) {
+    @Transactional
+    public Long delete(Long productId, HttpServletRequest request) {
 
-        WishList wishList = wishListRepository.findById(id).orElseThrow(()->
-                new ResourceNotFound("WishList", "id", id));
-
-        wishListRepository.delete(wishList);
-        return "Your wish item name : "+wishList.getProduct().getName()+"is successfully deleted.";
-    }
-
-    public WishList mapToEntity(WishListDto wishListDto) {
-        return mapper.map(wishListDto, WishList.class);
-    }
-
-    public WishListDto mapToDto(WishList wishList) {
-        return mapper.map(wishList, WishListDto.class);
+        User user = tokenUtil.extractUserInfo(request);
+        wishListRepository.deleteByUserAndProductId(user, productId);
+        return productId;
     }
 }

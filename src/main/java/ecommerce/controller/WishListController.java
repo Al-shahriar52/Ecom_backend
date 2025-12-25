@@ -1,11 +1,11 @@
 package ecommerce.controller;
 
-import ecommerce.dto.WishListDto;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 
 public interface WishListController {
 
-    ResponseEntity<?> add(WishListDto wishListDto, Long userId, Long productId);
-    ResponseEntity<?> getAll(int pageNo, int pageSize, String sortBy);
-    ResponseEntity<?> delete(Long id);
+    ResponseEntity<?> add(Long productId, HttpServletRequest servletRequest);
+    ResponseEntity<?> getAll(HttpServletRequest servletRequest);
+    ResponseEntity<?> delete(Long productId, HttpServletRequest servletRequest);
 }

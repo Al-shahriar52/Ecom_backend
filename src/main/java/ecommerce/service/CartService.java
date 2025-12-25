@@ -15,4 +15,5 @@ public interface CartService {
     CartItemListDto getCart(HttpServletRequest servletRequest);
     Long delete(Long cartId, HttpServletRequest servletRequest);
     CartUpdateRequestDto updateQuantity(CartUpdateRequestDto requestDto, HttpServletRequest servletRequest);
+    List<AddToCartRequestDto> addMultipleItemsToCart(List<AddToCartRequestDto> requestDtos, HttpServletRequest servletRequest);
 }

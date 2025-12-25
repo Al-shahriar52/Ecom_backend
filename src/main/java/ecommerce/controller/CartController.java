@@ -11,4 +11,5 @@ public interface CartController {
     ResponseEntity<?> getCart(HttpServletRequest servletRequest);
     ResponseEntity<?> delete(Long cartItemId, HttpServletRequest servletRequest);
     ResponseEntity<?> updateQuantity(CartUpdateRequestDto requestDto, HttpServletRequest servletRequest);
+    ResponseEntity<?> addMultipleItems(java.util.List<AddToCartRequestDto> requestDtos, HttpServletRequest servletRequest);
 }

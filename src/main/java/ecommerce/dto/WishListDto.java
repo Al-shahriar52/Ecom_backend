@@ -5,7 +5,9 @@ import lombok.Data;
 @Data
 public class WishListDto {
 
-    private Long id;
-    private UserDto user;
-    private ProductDto product;
+    private Long wishId;
+    private Long productId;
+    private String imageUrl;
+    private String productName;
+    private double price;
 }
