@@ -1,58 +1,66 @@
 package ecommerce.entity;
 
+import ecommerce.enums.OrderStatus;
+import ecommerce.enums.PaymentMethod;
+import ecommerce.enums.PaymentStatus;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.ToString;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Table(name = "customer_order")
+@Table(name = "orders")
 public class Order {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull
-    @Enumerated(EnumType.STRING)
-    private PayMethod paymentMethod;
-
-    @NotNull
-    @Min(value = 0)
-    private double taxPrice;
-
-    @NotNull
-    @Min(value = 0)
-    private double shippingPrice;
-
-    @NotNull
-    @Min(value = 0)
-    private double totalPrice;
-
-    private boolean isPaid;
-
-    private String paidAt;
-
-    private boolean isDelivered;
-
-    private String deliveredAt;
-
-    private String createdAt;
-
-    @OneToMany
-    private List<OrderItem> orderItems;
-
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    @ToString.Exclude
     private User user;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @NotNull
-    private Shipping shipping;
+    // --- Contact ---
+    private String shippingAddress;
+    private String city;
+    private String area;
+
+    @Column(name = "phone_number")
+    private String phoneNumber;
+    private String email;
+    private String name;
+    private String orderNote;
+
+    // --- Payment ---
+    @Enumerated(EnumType.STRING)
+    private PaymentMethod paymentMethod;
+
+    @Enumerated(EnumType.STRING)
+    private PaymentStatus paymentStatus = PaymentStatus.PENDING;
+
+    private LocalDateTime paidAt;
+
+    // --- Financials ---
+    private Double shippingCost;
+    private Double totalAmount;
+
+    // --- Status & Timeline ---
+    @Enumerated(EnumType.STRING)
+    private OrderStatus orderStatus = OrderStatus.PENDING;
+
+    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime packagedAt;
+    private LocalDateTime shippedAt;
+    private LocalDateTime deliveredAt;
+
+    private boolean isDelivered = false;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    private List<OrderItem> orderItems = new ArrayList<>();
 }

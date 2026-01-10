@@ -30,7 +30,7 @@ public class OrderItemServiceImpl implements OrderItemService {
         Product product = productRepository.findById(productId).orElseThrow(()->
                 new ResourceNotFound("Product", "id", productId));
 
-        item.setName(product.getName());
+        //item.setName(product.getName());
         item.setPrice(product.getDiscountedPrice());
 //        item.setImage(product.getImage());
         item.setQuantity(orderItemDto.getQuantity());
@@ -47,7 +47,7 @@ public class OrderItemServiceImpl implements OrderItemService {
                 new ResourceNotFound("OrderItem", "id", itemId));
 
         orderItemRepository.delete(item);
-        return "Your order item :"+item.getName()+" is deleted successfully.";
+        return "Your order item :"+" is deleted successfully.";
     }
 
     public OrderItem mapToEntity(OrderItemDto itemDto) {

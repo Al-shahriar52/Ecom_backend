@@ -15,6 +15,7 @@ public class CartItemDto {
     private double price;
     private double itemTotalPrice;
     private String imageUrl;
+    private int stockQuantity;
 
     public CartItemDto(Long productId, String name, double price, String imageUrl) {
         this.productId = productId;

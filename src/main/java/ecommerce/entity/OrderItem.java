@@ -1,39 +1,33 @@
 package ecommerce.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.ToString;
 
-import java.util.List;
+import java.math.BigDecimal;
 
 @Entity
-@AllArgsConstructor
-@NoArgsConstructor
 @Data
+@Table(name = "order_items")
 public class OrderItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
-    private String name;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id")
+    @ToString.Exclude
+    private Order order;
 
-    @Min(value = 1)
-    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id")
+    @ToString.Exclude
+    private Product product;
+
     private int quantity;
 
-    @Min(value = 0)
-    @NotNull
+    // We store the price at the moment of purchase,
+    // in case the product price changes later.
     private double price;
-
-    @Lob
-    private String image;
-
-    @ManyToOne
-    private Product product;
 }
