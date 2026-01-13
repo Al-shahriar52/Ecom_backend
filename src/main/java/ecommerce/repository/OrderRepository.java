@@ -1,6 +1,7 @@
 package ecommerce.repository;
 
 import ecommerce.entity.Order;
+import ecommerce.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,4 +11,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query(value = "SELECT o from Order o where o.user.phone like concat('%',:query,'%') ")
     Page<Order> search(Pageable pageable, String query);
+
+    Page<Order> findAllByUserOrderByCreatedAtDesc(User user, Pageable pageable);
 }

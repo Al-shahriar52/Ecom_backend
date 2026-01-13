@@ -163,7 +163,7 @@ public class OrderServiceImpl implements OrderService {
         List<OrderDto> content = orderList.stream().map(this::mapToDto).toList();
 
         OrderResponse response = new OrderResponse();
-        response.setContent(content);
+        //response.setContent(content);
         response.setPageNo(orders.getNumber());
         response.setPageSize(orders.getSize());
         response.setTotalPages(orders.getTotalPages());
@@ -187,6 +187,27 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + id));
         return mapToOrderResponse(order);
+    }
+
+    @Override
+    public OrderResponse myOrders(HttpServletRequest servletRequest, int pageNo, int pageSize) {
+        User user = tokenUtil.extractUserInfo(servletRequest);
+        Pageable pageable = PageRequest.of(pageNo, pageSize);
+        Page<Order> ordersPage = orderRepository.findAllByUserOrderByCreatedAtDesc(user, pageable);
+
+        // Map Entity -> DTO
+        List<OrderConfirmationResponse> content = ordersPage.getContent().stream()
+                .map(this::mapToOrderResponse) // Reuse your existing mapper
+                .toList();
+
+        return OrderResponse.builder()
+                .content(content)
+                .pageNo(ordersPage.getNumber())
+                .pageSize(ordersPage.getSize())
+                .totalPages(ordersPage.getTotalPages())
+                .totalElements(ordersPage.getTotalElements())
+                .last(ordersPage.isLast())
+                .build();
     }
 
     private OrderConfirmationResponse mapToOrderResponse(Order order) {
@@ -219,7 +240,7 @@ public class OrderServiceImpl implements OrderService {
             itemDto.setProductId(item.getProduct().getId());
             itemDto.setProductName(item.getProduct().getName());
             // Handle image safely (check nulls)
-            if(item.getProduct().getImageUrls() != null && !item.getProduct().getImageUrls().isEmpty()) {
+            if (item.getProduct().getImageUrls() != null && !item.getProduct().getImageUrls().isEmpty()) {
                 itemDto.setProductImageUrl(item.getProduct().getImageUrls().get(0).getImageUrl());
             }
             itemDto.setQuantity(item.getQuantity());

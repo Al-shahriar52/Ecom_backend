@@ -68,4 +68,14 @@ public class OrderControllerImpl implements OrderController {
         String message = orderService.delete(orderId);
         return new ResponseEntity<>(message, HttpStatus.OK);
     }
+
+    @Override
+    @GetMapping("/myOrders")
+    public ResponseEntity<?> myOrders(HttpServletRequest servletRequest,
+                                      @RequestParam(defaultValue = "0") int pageNo,
+                                      @RequestParam(defaultValue = "10") int pageSize) {
+
+        OrderResponse response = orderService.myOrders(servletRequest, pageNo, pageSize);
+        return new ResponseEntity<>(GenericResponseDto.success("My orders ", response, HttpStatus.OK.value()), HttpStatus.OK);
+    }
 }

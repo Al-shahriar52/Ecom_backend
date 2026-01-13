@@ -14,4 +14,6 @@ public interface OrderService {
     OrderResponse search(int pageNo, int pageSize, String sortBy, String query);
     String delete(Long orderId);
     OrderConfirmationResponse getOrderById(Long id);
+
+    OrderResponse myOrders(HttpServletRequest servletRequest, int pageNo, int pageSize);
 }

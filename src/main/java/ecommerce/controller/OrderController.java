@@ -14,4 +14,6 @@ public interface OrderController {
     ResponseEntity<?> update(OrderDto orderDto, Long orderId);
     ResponseEntity<?> search(int pageNo, int pageSize, String sortBy, String query);
     ResponseEntity<?> delete(Long orderId);
+    ResponseEntity<?> myOrders(HttpServletRequest servletRequest, int pageNo, int pageSize);
+
 }
