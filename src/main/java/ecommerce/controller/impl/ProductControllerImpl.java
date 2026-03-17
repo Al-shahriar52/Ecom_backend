@@ -54,6 +54,8 @@ public class ProductControllerImpl implements ProductController {
 
     @Override
     @DeleteMapping("/delete/{productId}")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> delete(@PathVariable Long productId) {
         String message = productService.delete(productId);
         return new ResponseEntity<>(message, HttpStatus.OK);
@@ -61,6 +63,8 @@ public class ProductControllerImpl implements ProductController {
 
     @Override
     @PutMapping("/update")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> update(@Valid @RequestBody ProductDto productDto, @RequestParam("file") MultipartFile[] files) throws IOException {
 
         ProductDto productUpdate = productService.update(productDto, files);

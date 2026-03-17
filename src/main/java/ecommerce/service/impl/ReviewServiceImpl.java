@@ -61,6 +61,7 @@ public class ReviewServiceImpl implements ReviewService {
         Review review = new Review();
         review.setComment(reviewDto.getComment());
         review.setRating(reviewDto.getRating());
+        review.setApproved(true);
 
         if (file != null) {
             String imageUrl = imageUtil.uploadFile(file);
@@ -75,7 +76,6 @@ public class ReviewServiceImpl implements ReviewService {
         }
 
         review.setUser(userInfo);
-        reviewRepository.save(review);
 
         Long numReviews = product.getNumReviews();
         double rating = product.getRating();
@@ -85,6 +85,7 @@ public class ReviewServiceImpl implements ReviewService {
         product.setNumReviews(numReviews + 1);
         product.setUpdatedAt(LocalDateTime.now());
         productRepository.save(product);
+        reviewRepository.save(review);
 
         return mapToDto(review);
     }

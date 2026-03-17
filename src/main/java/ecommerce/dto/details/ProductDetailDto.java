@@ -36,7 +36,7 @@ public class ProductDetailDto {
         this.discountedPrice = discountedPrice;
         this.quantity = quantity;
         this.sku = sku;
-        this.rating = rating;
+        this.rating = rating != null ? Math.round(rating * 10.0) / 10.0 : 0.0;
         this.numReviews = numReviews;
     }
 }
