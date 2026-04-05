@@ -10,6 +10,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails; // <-- Import UserDetails
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -49,11 +50,14 @@ public class User implements UserDetails { // <-- Implement the interface
     @CreationTimestamp
     private String createdAt;
 
-    private Boolean status = true;
+    private Boolean status = false;
 
     private Gender gender;
 
     private String dob;
+
+    private String otp;
+    private LocalDateTime otpExpiry;
 
     // ========= UserDetails Method Implementations =========
 

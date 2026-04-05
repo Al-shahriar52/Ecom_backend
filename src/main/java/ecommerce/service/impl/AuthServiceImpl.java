@@ -1,10 +1,7 @@
 package ecommerce.service.impl;
 
 import ecommerce.config.JwtService;
-import ecommerce.dto.LoginRequest;
-import ecommerce.dto.LoginResponse;
-import ecommerce.dto.RegistrationRequestDto;
-import ecommerce.dto.RegistrationResponseDto;
+import ecommerce.dto.*;
 import ecommerce.entity.Role;
 import ecommerce.entity.User;
 import ecommerce.exceptionHandling.BadRequestException;
@@ -26,7 +23,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 
 @Service
@@ -36,7 +35,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
-    @Override
+    /*@Override
     public RegistrationResponseDto register(RegistrationRequestDto requestDto) {
 
         ContactValidator.ContactType type = ContactValidator.identifyContactType(requestDto.getEmailOrPhone());
@@ -67,6 +66,58 @@ public class AuthServiceImpl implements AuthService {
         }
         userRepository.save(user);
         return new RegistrationResponseDto(requestDto.getName());
+    }*/
+
+    @Override
+    public RegistrationResponseDto register(RegistrationRequestDto requestDto) {
+        ContactValidator.ContactType type = ContactValidator.identifyContactType(requestDto.getEmailOrPhone());
+
+        // 1. Check if user already exists (Active or Unverified)
+        Optional<User> existingUserOpt = userRepository.findByEmailOrPhone(requestDto.getEmailOrPhone(), requestDto.getEmailOrPhone());
+
+        User user;
+        if (existingUserOpt.isPresent()) {
+            user = existingUserOpt.get();
+            if (user.getStatus()) {
+                // User exists and is already verified
+                throw new BadRequestException("This email or phone number already exists.");
+            }
+            // If user exists but status is false, we just reuse the entity and generate a new OTP
+        } else {
+            user = new User();
+        }
+
+        // 2. Set user details
+        user.setName(requestDto.getName());
+        user.setPassword(passwordEncoder.encode(requestDto.getPassword()));
+        user.getRoles().add(Role.USER);
+        user.setStatus(false); // Make sure they are unverified
+
+        switch (type) {
+            case EMAIL:
+                user.setEmail(requestDto.getEmailOrPhone());
+                break;
+            case PHONE:
+                user.setPhone(requestDto.getEmailOrPhone());
+                break;
+            case INVALID:
+                throw new BadRequestException("Invalid email or phone number format");
+        }
+
+        // 3. Generate and set OTP
+        String otp = generateOtp();
+        user.setOtp(otp);
+        user.setOtpExpiry(LocalDateTime.now().plusMinutes(5)); // OTP valid for 5 minutes
+
+        userRepository.save(user);
+
+        // TODO: In production, integrate Email Sender or SMS Gateway here.
+        // For now, we print it to the console so you can test it!
+        System.out.println("=============================================");
+        System.out.println("MOCK SENDING OTP: " + otp + " TO: " + requestDto.getEmailOrPhone());
+        System.out.println("=============================================");
+
+        return new RegistrationResponseDto("OTP sent to your contact method.");
     }
 
     public LoginResponse login(LoginRequest authenticationRequest, HttpServletResponse servletResponse) {
@@ -167,6 +218,41 @@ public class AuthServiceImpl implements AuthService {
         } else {
             throw new BadRequestException("Invalid Token Claims");
         }
+    }
+
+    private String generateOtp() {
+        Random random = new Random();
+        int otp = 100000 + random.nextInt(900000); // Generates a number between 100000 and 999999
+        return String.valueOf(otp);
+    }
+
+    public String verifyRegistrationOtp(VerifyOtpRequest request) {
+        // 1. Find the user
+        User user = userRepository.findByEmailOrPhone(request.getEmailOrPhone(), request.getEmailOrPhone())
+                .orElseThrow(() -> new BadRequestException("User not found."));
+
+        // 2. Check if already verified
+        if (user.getStatus()) {
+            throw new BadRequestException("Account is already verified. Please login.");
+        }
+
+        // 3. Check OTP match
+        if (user.getOtp() == null || !user.getOtp().equals(request.getOtp())) {
+            throw new BadRequestException("Invalid OTP.");
+        }
+
+        // 4. Check OTP expiry
+        if (user.getOtpExpiry().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("OTP has expired. Please request a new one.");
+        }
+
+        // 5. Verification Success: Activate user and clear OTP
+        user.setStatus(true);
+        user.setOtp(null);
+        user.setOtpExpiry(null);
+        userRepository.save(user);
+
+        return "Account verified successfully.";
     }
 
 }

@@ -1,0 +1,13 @@
+package ecommerce.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+
+@Data
+public class VerifyOtpRequest {
+    @NotBlank
+    private String emailOrPhone;
+    
+    @NotBlank
+    private String otp;
+}

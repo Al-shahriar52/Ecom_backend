@@ -48,4 +48,10 @@ public class AuthControllerImpl implements AuthController {
 
         return new ResponseEntity<>(GenericResponseDto.success("Fetched user info successfully", authData, HttpStatus.OK.value()), HttpStatus.OK);
     }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<?> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
+        String message = authService.verifyRegistrationOtp(request);
+        return new ResponseEntity<>(GenericResponseDto.success(message, null, HttpStatus.OK.value()), HttpStatus.OK);
+    }
 }
