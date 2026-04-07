@@ -57,6 +57,7 @@ public class User implements UserDetails { // <-- Implement the interface
     private String dob;
 
     private String otp;
+
     private LocalDateTime otpExpiry;
 
     // ========= UserDetails Method Implementations =========

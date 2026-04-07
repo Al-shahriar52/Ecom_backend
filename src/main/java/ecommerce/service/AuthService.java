@@ -12,4 +12,6 @@ public interface AuthService {
     RegistrationResponseDto register(RegistrationRequestDto requestDto);
     LoginResponse login(LoginRequest authenticationRequest, HttpServletResponse servletResponse);
     LoginResponse refreshToken(HttpServletRequest request, HttpServletResponse servletResponse);
+    String forgotPassword(String emailOrPhone);
+    String resetPassword(String emailOrPhone, String otp, String newPassword);
 }

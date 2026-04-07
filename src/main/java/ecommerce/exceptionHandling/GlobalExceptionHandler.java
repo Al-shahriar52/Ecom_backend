@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -19,72 +20,12 @@ import java.sql.SQLIntegrityConstraintViolationException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-//    private static final DateTimeFormatter FORMATTER =
-//            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-//
-//    @ExceptionHandler(ResourceNotFound.class)
-//    protected ResponseEntity<ErrorMessage> handleResourceNotFound(@NotNull ResourceNotFound ex) {
-//
-//        ErrorMessage message = new ErrorMessage(ex.getMessage());
-//        return new ResponseEntity<>(message, HttpStatus.NOT_FOUND) ;
-//    }
-//
-//    @ExceptionHandler(MethodArgumentNotValidException.class)
-//    @ResponseStatus(HttpStatus.BAD_REQUEST)
-//    @ResponseBody
-//    protected ResponseEntity<String> handleValidationException(MethodArgumentNotValidException ex) {
-//        BindingResult bindingResult = ex.getBindingResult();
-//        StringBuilder errorMessage = new StringBuilder();
-//
-//        for (FieldError fieldError : bindingResult.getFieldErrors()) {
-//            errorMessage.append(fieldError.getField())
-//                    .append(": ")
-//                    .append(fieldError.getDefaultMessage())
-//                    .append(". ")
-//                    .append("\n");
-//        }
-//        return ResponseEntity.badRequest().body(errorMessage.toString());
-//    }
-//
-//    @ExceptionHandler(ConstraintViolationException.class)
-//    @ResponseStatus(HttpStatus.BAD_REQUEST)
-//    @ResponseBody
-//    protected ResponseEntity<String> handleConstraintViolationException(ConstraintViolationException ex) {
-//        StringBuilder errorMessage = new StringBuilder();
-//
-//        for (ConstraintViolation<?> violation : ex.getConstraintViolations()) {
-//            errorMessage.append(violation.getPropertyPath())
-//                    .append(": ")
-//                    .append(violation.getMessage())
-//                    .append(". ")
-//                    .append("\n");
-//        }
-//        return ResponseEntity.badRequest().body(errorMessage.toString());
-//    }
-//
-//    @ExceptionHandler({SQLIntegrityConstraintViolationException.class, DataIntegrityViolationException.class})
-//    protected ResponseEntity<ErrorMessage> handleSqlIntegrityViolation(SQLIntegrityConstraintViolationException ex) {
-//
-//        ErrorMessage message = new ErrorMessage(ex.getMessage());
-//        return new ResponseEntity<>(message, HttpStatus.CONFLICT);
-//    }
-//
-//    @ExceptionHandler(BadRequestException.class)
-//    public ResponseEntity<Map<String, Object>> handleBadRequest(BadRequestException ex) {
-//        Map<String, Object> body = new HashMap<>();
-//        body.put("timestamp", LocalDateTime.now().format(FORMATTER));
-//        body.put("status", HttpStatus.BAD_REQUEST.value());
-//        body.put("error", "Bad Request");
-//        body.put("message", ex.getMessage());
-//
-//        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
-//    }
 
-    // 400 - Bad Request
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<GenericResponseDto<Object>> handleBadRequest(BadRequestException ex) {
         return ResponseEntity.badRequest().body(
@@ -159,5 +100,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 GenericResponseDto.error("Internal Server Error", ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value())
         );
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<Map<String, Object>> handleDisabledException(DisabledException ex) {
+
+        Map<String, Object> body = new LinkedHashMap<>();
+
+        // Formatting the date to match your JSON structure
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        body.put("timestamp", LocalDateTime.now().format(formatter));
+        body.put("status", HttpStatus.FORBIDDEN.value()); // 403 status code
+        body.put("error", "Forbidden");
+        body.put("message", "Account is not verified. Please complete OTP verification.");
+        body.put("data", null);
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
     }
 }

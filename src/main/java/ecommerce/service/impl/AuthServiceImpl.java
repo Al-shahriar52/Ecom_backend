@@ -35,38 +35,8 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
-    /*@Override
-    public RegistrationResponseDto register(RegistrationRequestDto requestDto) {
-
-        ContactValidator.ContactType type = ContactValidator.identifyContactType(requestDto.getEmailOrPhone());
-
-        Optional<User> existingUser = userRepository.findByEmailOrPhoneAndStatusIsTrue(requestDto.getEmailOrPhone(), requestDto.getEmailOrPhone());
-        if (existingUser.isPresent()) {
-            throw new BadRequestException("This email or phone number is already exist");
-        }
-        User user = new User();
-        user.setName(requestDto.getName());
-        user.setPassword(passwordEncoder.encode(requestDto.getPassword()));
-        user.setRoles(Set.of(Role.USER));
-
-
-        switch (type) {
-            case EMAIL:
-                // Handle email registration
-                user.setEmail(requestDto.getEmailOrPhone());
-                break;
-
-            case PHONE:
-                // Handle phone registration
-                user.setPhone(requestDto.getEmailOrPhone());
-                break;
-
-            case INVALID:
-                throw new BadRequestException("Invalid email or phone number format");
-        }
-        userRepository.save(user);
-        return new RegistrationResponseDto(requestDto.getName());
-    }*/
+    private final EmailService emailService;
+    private final SmsService smsService;
 
     @Override
     public RegistrationResponseDto register(RegistrationRequestDto requestDto) {
@@ -116,6 +86,16 @@ public class AuthServiceImpl implements AuthService {
         System.out.println("=============================================");
         System.out.println("MOCK SENDING OTP: " + otp + " TO: " + requestDto.getEmailOrPhone());
         System.out.println("=============================================");
+
+        String emailOrPhone = requestDto.getEmailOrPhone();
+
+        if (emailOrPhone.contains("@")) {
+            // It's an email
+            emailService.sendOtpEmail(emailOrPhone, otp);
+        } else {
+            // It's a phone number
+            smsService.sendOtpSms(emailOrPhone, otp);
+        }
 
         return new RegistrationResponseDto("OTP sent to your contact method.");
     }
@@ -253,6 +233,54 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
 
         return "Account verified successfully.";
+    }
+
+    @Override
+    public String forgotPassword(String emailOrPhone) {
+        // Find the user
+        Optional<User> userOptional = userRepository.findByEmailOrPhone(emailOrPhone, emailOrPhone);
+        if (userOptional.isEmpty()) {
+            throw new BadRequestException("Account not found with this email or phone.");
+        }
+
+        User user = userOptional.get();
+        // Generate a new 6-digit OTP (assuming you have a generateOtp() helper method)
+        String generatedOtp = generateOtp();
+
+        // Save OTP to user (adjust field names based on your User entity)
+        user.setOtp(generatedOtp);
+        user.setOtpExpiry(LocalDateTime.now().plusMinutes(5)); // OTP valid for 5 minutes
+        userRepository.save(user);
+
+        // Send the OTP
+        if (emailOrPhone.contains("@")) {
+            emailService.sendOtpEmail(emailOrPhone, generatedOtp);
+        } else {
+            smsService.sendOtpSms(emailOrPhone, generatedOtp);
+        }
+
+        return "OTP sent to your email or phone.";
+    }
+
+    // 2. Verify OTP and Reset Password
+    @Override
+    public String resetPassword(String emailOrPhone, String otp, String newPassword) {
+        User user = userRepository.findByEmailOrPhone(emailOrPhone, emailOrPhone)
+                .orElseThrow(() -> new BadRequestException("Account not found."));
+
+        // Verify OTP
+        if (user.getOtp() == null || !user.getOtp().equals(otp) || user.getOtpExpiry() == null || user.getOtpExpiry().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("Invalid or expired OTP.");
+        }
+
+        // Encode and set the new password
+        user.setPassword(passwordEncoder.encode(newPassword));
+
+        // Clear the OTP so it can't be used again
+        user.setOtp(null);
+        user.setOtpExpiry(null);
+        userRepository.save(user);
+        return "Password reset successfully. You can now login.";
     }
 
 }

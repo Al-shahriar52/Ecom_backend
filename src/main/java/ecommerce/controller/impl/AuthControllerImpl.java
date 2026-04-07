@@ -2,7 +2,8 @@ package ecommerce.controller.impl;
 
 import ecommerce.controller.AuthController;
 import ecommerce.dto.*;
-import ecommerce.service.AuthService;
+import ecommerce.dto.auth.ForgotPasswordRequest;
+import ecommerce.dto.auth.ResetPasswordRequest;
 import ecommerce.service.impl.AuthServiceImpl;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -52,6 +53,18 @@ public class AuthControllerImpl implements AuthController {
     @PostMapping("/verify-otp")
     public ResponseEntity<?> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
         String message = authService.verifyRegistrationOtp(request);
+        return new ResponseEntity<>(GenericResponseDto.success(message, null, HttpStatus.OK.value()), HttpStatus.OK);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        String message = authService.forgotPassword(request.getEmailOrPhone());
+        return new ResponseEntity<>(GenericResponseDto.success(message, null, HttpStatus.OK.value()), HttpStatus.OK);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        String message = authService.resetPassword(request.getEmailOrPhone(), request.getOtp(), request.getPassword());
         return new ResponseEntity<>(GenericResponseDto.success(message, null, HttpStatus.OK.value()), HttpStatus.OK);
     }
 }
