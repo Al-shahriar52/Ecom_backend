@@ -65,7 +65,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         // IMPORTANT: Set this to the origin of your frontend application
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173")); // Add your frontend's URL
+        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173", "https://beautyhaat.com")); // Add your frontend's URL
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Auth-Token"));
         configuration.setAllowCredentials(true);

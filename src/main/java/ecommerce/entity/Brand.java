@@ -22,7 +22,7 @@ public class Brand {
 
     private String logoUrl;
 
-    private boolean isTop;
+    private boolean isTop = false;
 
     private String slug;
 }
