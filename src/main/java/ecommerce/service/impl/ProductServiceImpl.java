@@ -87,24 +87,50 @@ public class ProductServiceImpl implements ProductService {
         Product product = productRepository.findById(productDto.getProductId()).orElseThrow(()->
                 new ResourceNotFound("Product", "id", productDto.getProductId()));
 
+        // FIX: Ensure the SKU doesn't belong to a DIFFERENT product
+        Optional<Product> bySku = productRepository.findBySku(productDto.getSku());
+        if (bySku.isPresent() && !bySku.get().getId().equals(product.getId())) {
+            throw new BadRequestException("Product with SKU " + productDto.getSku() + " already exists.");
+        }
+
+        Brand brand = brandRepository.findById(productDto.getBrandId()).orElseThrow(()->
+                new ResourceNotFound("Brand", "id", productDto.getBrandId()));
+
         Category category = categoryRepository.findById(productDto.getCategoryId()).orElseThrow(() ->
                 new ResourceNotFound("Category", "id", productDto.getCategoryId()));
 
-        List<ProductImage> imageUrls = imageUtil.uploadFiles(Arrays.asList(files), product);
-        productImageRepository.saveAll(imageUrls);
+        SubCategory subCategory = subCategoryRepository.findById(productDto.getSubCategoryId()).orElseThrow(()->
+                new ResourceNotFound("SubCategory", "id", productDto.getSubCategoryId()));
 
-        Optional<Brand> brand = brandRepository.findById(productDto.getBrandId());
-        brand.ifPresent(product::setBrand);
+        Optional<Tag> tag = tagRepository.findById(productDto.getTagId());
+
         product.setName(productDto.getName());
-        product.setCategory(category);
-        product.setQuantity(productDto.getQuantity());
         product.setDescription(productDto.getDescription());
-        product.setNumReviews(productDto.getNumReviews());
-        product.setOriginalPrice(productDto.getOriginalPrice());
+        product.setSku(productDto.getSku());
+        product.setBrand(brand);
+        product.setStatus(productDto.getStatus());
         product.setDiscountedPrice(productDto.getDiscountedPrice());
-        product.setRating(productDto.getRating());
+        product.setOriginalPrice(productDto.getOriginalPrice());
+
+        if (Objects.nonNull(productDto.getRating())) {
+            product.setNumReviews(1L);
+            product.setRating(productDto.getRating());
+        } else {
+            product.setNumReviews(0L);
+            product.setRating(0.0);
+        }
+
+        product.setCategory(category);
+        product.setSubCategory(subCategory);
+        tag.ifPresent(product::setTag);
+        product.setQuantity(productDto.getQuantity());
+
+        // NOTE: Make sure wherever you save your images (maybe inside productVariationDataSaving?),
+        // you check if 'files' is null before processing!
+        // Example: if (files != null && files.length > 0) { ... process new images ... }
 
         productRepository.save(product);
+        productVariationDataSaving(productDto, product);
         return mapToDto(product);
     }
 

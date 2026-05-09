@@ -56,13 +56,14 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Optional<Product> findBySku(String sku);
 
     @Query("SELECT new ecommerce.dto.details.ProductDetailDto(p.id, p.name, p.description, b.name, " +
-            "c.name, t.name, p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews) " +
+            "c.name, sc.name, t.name, p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews) " +
             "FROM Product p " +
             "LEFT JOIN Brand b on b.id=p.brand.id " +
             "LEFT JOIN Category c on c.id=p.category.id " +
+            "LEFT JOIN SubCategory sc on sc.id=p.subCategory.id " +
             "LEFT JOIN Tag t on t.id=p.tag.id " +
             "WHERE p.id = :productId " +
-            "GROUP BY p.id, p.name, p.description, b.name, " +
+            "GROUP BY p.id, p.name, p.description, b.name, c.name, sc.name, " +
             "p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews")
     ProductDetailDto getProductDetailById(Long productId);
 

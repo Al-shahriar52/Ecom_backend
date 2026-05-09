@@ -12,6 +12,7 @@ public class ProductDetailDto {
     private String description;
     private String brandName;
     private String categoryNames;
+    private String subCategoryNames;
     private String tagNames;
     private double originalPrice;
     private double discountedPrice;
@@ -23,7 +24,7 @@ public class ProductDetailDto {
     private List<VariationDto> variations;
 
     public ProductDetailDto(Long productId, String name, String description,
-                            String brandName, String categoryName, String tagName,
+                            String brandName, String categoryName, String subCategoryNames, String tagName,
                             double originalPrice, double discountedPrice, int quantity,
                             String sku, Double rating, Long numReviews) {
         this.productId = productId;
@@ -31,6 +32,7 @@ public class ProductDetailDto {
         this.description = description;
         this.brandName = brandName;
         this.categoryNames = categoryName;
+        this.subCategoryNames = subCategoryNames;
         this.tagNames = tagName;
         this.originalPrice = originalPrice;
         this.discountedPrice = discountedPrice;

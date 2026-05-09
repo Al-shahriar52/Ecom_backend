@@ -62,11 +62,13 @@ public class ProductControllerImpl implements ProductController {
     }
 
     @Override
-    @PutMapping("/update")
+    @PutMapping(value = "/update", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     @SecurityRequirement(name = "bearerAuth")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> update(@Valid @RequestBody ProductDto productDto, @RequestParam("file") MultipartFile[] files) throws IOException {
+    public ResponseEntity<?> update(@Valid @RequestPart("productDto") String productDtoString, @RequestPart(value = "files", required = false) MultipartFile[] files) throws IOException {
 
+        ObjectMapper mapper = new ObjectMapper();
+        ProductDto productDto = mapper.readValue(productDtoString, ProductDto.class);
         ProductDto productUpdate = productService.update(productDto, files);
         return new ResponseEntity<>(productUpdate, HttpStatus.OK);
     }

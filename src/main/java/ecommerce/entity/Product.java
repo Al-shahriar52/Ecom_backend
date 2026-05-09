@@ -76,6 +76,10 @@ public class Product {
             inverseJoinColumns = @JoinColumn(name = "paired_product_id")
     )
     private Set<Product> frequentlyBoughtTogether = new HashSet<>();
+
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductImage> imageUrls;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Variation> variations;
 }
