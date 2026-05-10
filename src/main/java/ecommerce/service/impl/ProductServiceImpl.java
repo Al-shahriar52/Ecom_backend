@@ -129,7 +129,25 @@ public class ProductServiceImpl implements ProductService {
         // you check if 'files' is null before processing!
         // Example: if (files != null && files.length > 0) { ... process new images ... }
 
+        // If the frontend sent retained URLs, keep only those.
+        if (productDto.getRetainedImageUrls() != null && !productDto.getRetainedImageUrls().isEmpty()) {
+            product.getImageUrls().removeIf(existingImage ->
+                    !productDto.getRetainedImageUrls().contains(existingImage.getImageUrl())
+            );
+        } else {
+            // If the list is empty or null, the user deleted ALL existing images.
+            if (product.getImageUrls() != null) {
+                product.getImageUrls().clear();
+            }
+        }
+
         productRepository.save(product);
+
+        if (files != null && files.length > 0) {
+            List<ProductImage> productImages = imageUtil.uploadFiles(Arrays.asList(files), product);
+            productImageRepository.saveAll(productImages);
+        }
+
         productVariationDataSaving(productDto, product);
         return mapToDto(product);
     }
@@ -249,6 +267,11 @@ public class ProductServiceImpl implements ProductService {
 
         Long categoryId = product.getCategory().getId();
         return productRepository.findByCategoryIdAndIdNotOrderByCreatedAtDesc(categoryId, productId);
+    }
+
+    @Override
+    public List<Product> findAll() {
+        return productRepository.findAll();
     }
 
     // Helper method to convert BrandMenuDTO to a TopBrand DTO

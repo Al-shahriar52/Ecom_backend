@@ -50,4 +50,6 @@ public class ProductDto {
     private Long numReviews;
 
     private List<String> images;
+
+    private List<String> retainedImageUrls;
 }

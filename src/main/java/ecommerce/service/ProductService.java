@@ -8,6 +8,7 @@ import ecommerce.dto.details.ProductDetailDto;
 import ecommerce.dto.pageResponse.ProductResponse;
 import ecommerce.entity.Brand;
 import ecommerce.entity.Category;
+import ecommerce.entity.Product;
 import ecommerce.entity.Tag;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -45,4 +46,6 @@ public interface ProductService {
     ProductDetailDto getProductDetailById(Long productId);
 
     List<ProductSearchResponseDto> findSimilarProducts(Long productId);
+
+    List<Product> findAll();
 }

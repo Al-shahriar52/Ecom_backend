@@ -47,6 +47,7 @@ public class SecurityConfig {
                         "/api/v1/product/detail/{productId}",
                         "/api/v1/review/product/{productId}",
                         "/api/v1/frequently-bought/get/product/{productId}",
+                        "sitemap.xml",
                         "/api/v1/product/similar/{productId}",
                         "/api/v1/user/refreshAccessToken",
                         "/v3/api-docs/**",
