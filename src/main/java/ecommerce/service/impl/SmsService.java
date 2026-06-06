@@ -47,7 +47,7 @@ public class SmsService {
             System.out.println("BDBulkSMS Response: " + response);
 
         } catch (Exception e) {
-            System.err.println("Failed to send OTP SMS via BDBulkSMS: " + e.getMessage());
+            System.err.println("Failed to send OTP SMS : " + e.getMessage());
         }
     }
 }
