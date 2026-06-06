@@ -40,85 +40,7 @@ public class OrderServiceImpl implements OrderService {
     private final CartItemRepository cartItemRepository;
     private final TokenUtil tokenUtil;
     private final InvoiceRepository invoiceRepository;
-
-    /*@Override
-    @Transactional
-    public Long placeOrder(HttpServletRequest servletRequest, OrderRequest request) {
-        // --- FETCH USER ---
-        User user = tokenUtil.extractUserInfo(servletRequest);
-        Order order = new Order();
-        order.setUser(user);
-        order.setShippingAddress(request.getShippingAddress());
-        order.setCity(request.getCity());
-        order.setArea(request.getArea());
-        order.setPhoneNumber(request.getPhone());
-        order.setEmail(request.getEmail());
-        order.setName(request.getName());
-        order.setOrderNote(request.getOrderNote());
-        order.setPaymentMethod(request.getPaymentMethod());
-
-        // --- 1. CALCULATE SHIPPING ---
-        double shippingCharge;
-
-        if (request.getCity() != null && request.getCity().trim().equalsIgnoreCase("Dhaka")) {
-            shippingCharge = 60.00;
-        } else {
-            shippingCharge = 120.00;
-        }
-        order.setShippingCost(shippingCharge);
-
-        // --- 2. PROCESS ITEMS ---
-        double itemsTotal = 0.0;
-        List<OrderItem> orderItems = new ArrayList<>();
-
-        for (OrderRequest.OrderItemRequest itemRequest : request.getItems()) {
-            Product product = productRepository.findById(itemRequest.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Product not found ID: " + itemRequest.getProductId()));
-
-            // Stock Check
-            if (product.getQuantity() < itemRequest.getQuantity()) {
-                throw new RuntimeException("Not enough stock for: " + product.getName());
-            }
-
-            // Reduce Stock
-            product.setQuantity(product.getQuantity() - itemRequest.getQuantity());
-            productRepository.save(product);
-
-            // Create OrderItem
-            OrderItem orderItem = new OrderItem();
-            orderItem.setOrder(order);
-            orderItem.setProduct(product);
-            orderItem.setQuantity(itemRequest.getQuantity());
-            orderItem.setPrice(product.getDiscountedPrice());
-
-            orderItems.add(orderItem);
-
-            // Math is simpler with Double
-            double lineTotal = orderItem.getPrice() * itemRequest.getQuantity();
-            itemsTotal += lineTotal;
-        }
-
-        // Final Total
-        order.setTotalAmount(itemsTotal + shippingCharge);
-        order.setOrderItems(orderItems);
-
-        // --- 3. STATUS SETUP ---
-        if (request.getPaymentMethod() == PaymentMethod.COD) {
-            // COD Logic
-            order.setPaymentStatus(PaymentStatus.PENDING);
-            order.setOrderStatus(OrderStatus.CONFIRMED);
-
-        } else {
-            order.setPaymentStatus(PaymentStatus.PENDING);
-            order.setOrderStatus(OrderStatus.PENDING);
-        }
-
-        // --- 4. SAVE & CLEAR CART ---
-        Order savedOrder = orderRepository.save(order);
-        clearUserCart(user);
-
-        return savedOrder.getId();
-    }*/
+    private final EmailService emailService;
 
     @Override
     @Transactional
@@ -224,6 +146,9 @@ public class OrderServiceImpl implements OrderService {
 
         // --- 6. CLEAR CART ---
         clearUserCart(user);
+
+        // Sent safely right before return statement. Thread safe & non-blocking.
+        emailService.sendOrderConfirmationEmail(user, savedOrder, invoice);
 
         return savedOrder.getId();
     }

@@ -82,4 +82,18 @@ public class Product {
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Variation> variations;
+
+    @Column(unique = true, nullable = false)
+    private String slug;
+
+    @PrePersist
+    @PreUpdate
+    public void generateSlug() {
+        if (this.name != null) {
+            this.slug = this.name.toLowerCase()
+                    .replaceAll("[^a-z0-9\\s]", "") // Removes special characters
+                    .replaceAll("\\s+", "-")        // Replaces spaces with dashes
+                    .trim();
+        }
+    }
 }
