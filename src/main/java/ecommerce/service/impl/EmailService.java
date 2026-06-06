@@ -7,6 +7,7 @@ import ecommerce.entity.User;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -197,5 +198,25 @@ public class EmailService {
             // Logs an exception instead of blocking the critical checkout flow
             System.err.println("Failed to send order confirmation email for Order ID: " + order.getId() + ". Error: " + e.getMessage());
         }
+    }
+
+    @Async
+    public void sendContactEmail(String name, String customerEmail, String message) {
+        SimpleMailMessage mailMessage = new SimpleMailMessage();
+
+        // Sending to your business emails
+        mailMessage.setTo("beautyhaat52@gmail.com");
+        mailMessage.setSubject("New Contact Form Submission from: " + name);
+
+        // The body of the email
+        String emailBody = "You have received a new message from your website.\n\n" +
+                "Name: " + name + "\n" +
+                "Email: " + customerEmail + "\n" +
+                "Message:\n" + message;
+
+        mailMessage.setText(emailBody);
+        mailMessage.setReplyTo(customerEmail); // So you can reply directly to the customer
+
+        mailSender.send(mailMessage);
     }
 }
