@@ -4,7 +4,6 @@ import ecommerce.dto.OrderDto;
 import ecommerce.dto.order.OrderConfirmationResponse;
 import ecommerce.dto.order.OrderRequest;
 import ecommerce.dto.pageResponse.OrderResponse;
-import ecommerce.entity.Order;
 import jakarta.servlet.http.HttpServletRequest;
 
 public interface OrderService {
@@ -16,4 +15,5 @@ public interface OrderService {
     OrderConfirmationResponse getOrderById(Long id);
 
     OrderResponse myOrders(HttpServletRequest servletRequest, int pageNo, int pageSize);
+    byte[] generateInvoice(Long orderId);
 }
