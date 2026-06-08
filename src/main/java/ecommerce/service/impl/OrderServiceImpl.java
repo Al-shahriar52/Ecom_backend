@@ -285,6 +285,16 @@ public class OrderServiceImpl implements OrderService {
         return response;
     }
 
+    public byte[] generateInvoice(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        // Fetch associated invoice
+        Invoice invoice = order.getInvoice();
+
+        return emailService.generatePdfInvoice(order, invoice);
+    }
+
     public Order mapToEntity(OrderDto orderDto) {
         return mapper.map(orderDto, Order.class);
     }

@@ -9,7 +9,9 @@ import ecommerce.dto.pageResponse.OrderResponse;
 import ecommerce.service.OrderService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -77,5 +79,14 @@ public class OrderControllerImpl implements OrderController {
 
         OrderResponse response = orderService.myOrders(servletRequest, pageNo, pageSize);
         return new ResponseEntity<>(GenericResponseDto.success("My orders ", response, HttpStatus.OK.value()), HttpStatus.OK);
+    }
+
+    @GetMapping("/{orderId}/invoice/download")
+    public ResponseEntity<byte[]> downloadInvoice(@PathVariable Long orderId) {
+        byte[] pdfBytes = orderService.generateInvoice(orderId);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + orderId + ".pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdfBytes);
     }
 }

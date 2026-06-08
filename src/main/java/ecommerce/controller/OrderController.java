@@ -4,8 +4,7 @@ import ecommerce.dto.OrderDto;
 import ecommerce.dto.order.OrderRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
-
-import java.util.List;
+import org.springframework.web.bind.annotation.PathVariable;
 
 public interface OrderController {
 
@@ -15,5 +14,5 @@ public interface OrderController {
     ResponseEntity<?> search(int pageNo, int pageSize, String sortBy, String query);
     ResponseEntity<?> delete(Long orderId);
     ResponseEntity<?> myOrders(HttpServletRequest servletRequest, int pageNo, int pageSize);
-
+    ResponseEntity<byte[]> downloadInvoice(@PathVariable Long orderId);
 }
