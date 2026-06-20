@@ -33,6 +33,7 @@ dependencies {
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation("com.openhtmltopdf:openhtmltopdf-pdfbox:1.0.10")
+    implementation 'net.coobird:thumbnailator:0.4.20'
 
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'com.mysql:mysql-connector-j'
