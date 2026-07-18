@@ -232,15 +232,20 @@ public class EmailService {
         StringBuilder itemsTableRows = new StringBuilder();
         for (OrderItem item : order.getOrderItems()) {
             double lineTotal = item.getPrice() * item.getQuantity();
+
+            // ESCAPE PRODUCT NAME: Prevents crashes on names like "Oil & Shine Control"
+            String safeProductName = org.springframework.web.util.HtmlUtils.htmlEscape(item.getProduct().getName());
+
+            // WRAPPED TAKA SYMBOL IN SPAN FOR SCALING
             itemsTableRows.append(String.format("""
             <tr>
                 <td>%s</td>
                 <td class="center">%d</td>
-                <td class="right">৳ %.2f</td>
-                <td class="right">৳ %.2f</td>
+                <td class="right"><span class="taka">৳</span> %.2f</td>
+                <td class="right"><span class="taka">৳</span> %.2f</td>
             </tr>
             """,
-                    item.getProduct().getName(),
+                    safeProductName,
                     item.getQuantity(),
                     item.getPrice(),
                     lineTotal
@@ -252,7 +257,6 @@ public class EmailService {
         String invoiceDate = invoice.getIssuedAt() != null ? invoice.getIssuedAt().format(formatter) : "N/A";
 
         // 3. The Professional HTML/CSS Template
-        // OpenHTMLToPDF is strict, so we ensure all tags are closed properly (e.g., <br/>, <meta />)
         String htmlTemplate = String.format("""
         <!DOCTYPE html>
         <html lang="en">
@@ -265,7 +269,7 @@ public class EmailService {
                     margin: 20mm 15mm;
                 }
                 body {
-                    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                    font-family: 'SolaimanLipi', 'Helvetica Neue', Helvetica, Arial, sans-serif;
                     margin: 0;
                     padding: 0;
                     color: #333;
@@ -278,18 +282,29 @@ public class EmailService {
                 .meta-cell { width: 50%%; vertical-align: top; }
                 .section-title { font-size: 12pt; font-weight: bold; color: #E91E63; text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
                 .info-block { font-size: 10pt; line-height: 1.6; color: #444; }
-                .items-table { width: 100%%; border-collapse: collapse; margin-bottom: 30px; }
+                
+                /* FIXED TABLE LAYOUT AND COLUMN WIDTH STYLES */
+                .items-table { width: 100%%; border-collapse: collapse; margin-bottom: 30px; table-layout: fixed; }
                 .items-table th { background-color: #E91E63; color: white; padding: 10px; font-size: 10pt; text-align: left; }
-                .items-table th.center { text-align: center; }
-                .items-table th.right { text-align: right; }
-                .items-table td { padding: 12px 10px; border-bottom: 1px solid #eee; font-size: 10pt; }
-                .items-table td.center { text-align: center; }
-                .items-table td.right { text-align: right; }
+                .items-table th.center { text-align: center; white-space: nowrap; }
+                .items-table th.right { text-align: right; white-space: nowrap; }
+                .items-table td { padding: 12px 10px; border-bottom: 1px solid #eee; font-size: 10pt; word-wrap: break-word; }
+                .items-table td.center { text-align: center; white-space: nowrap; }
+                .items-table td.right { text-align: right; white-space: nowrap; }
+                
                 .totals-table { width: 300px; margin-left: auto; border-collapse: collapse; }
-                .totals-table td { padding: 8px 10px; font-size: 11pt; text-align: right; }
+                .totals-table td { padding: 8px 10px; font-size: 11pt; text-align: right; white-space: nowrap; }
                 .totals-table td.label { text-align: left; color: #666; }
                 .grand-total { font-weight: bold; color: #E91E63; font-size: 14pt; background-color: #fdf2f6; }
                 .footer { margin-top: 50px; text-align: center; font-size: 9pt; color: #888; border-top: 1px solid #ddd; padding-top: 20px; }
+
+                /* CUSTOM TAKA SYMBOL SCALING AND ALIGNMENT */
+                .taka {
+                    font-size: 1.25em;          /* Adjusts scale relative to nearby text */
+                    font-weight: bold;
+                    vertical-align: -1px;       /* Pushes it slightly down to align with bottom baseline of numbers */
+                    margin-right: 1px;          /* Adds standard spacing */
+                }
             </style>
         </head>
         <body>
@@ -325,7 +340,7 @@ public class EmailService {
                             <strong>Order ID:</strong> #%d<br/>
                             <strong>Payment Method:</strong> %s<br/>
                             <strong>Payment Status:</strong> %s<br/>
-                            <strong>Shipping Cost:</strong> ৳ %.2f
+                            <strong>Shipping Cost:</strong> <span class="taka">৳</span> %.2f
                         </div>
                     </td>
                 </tr>
@@ -334,10 +349,10 @@ public class EmailService {
             <table class="items-table">
                 <thead>
                     <tr>
-                        <th>Description</th>
-                        <th class="center">Quantity</th>
-                        <th class="right">Unit Price</th>
-                        <th class="right">Total</th>
+                        <th style="width: 50%%;">Description</th>
+                        <th class="center" style="width: 12%%;">Quantity</th>
+                        <th class="right" style="width: 18%%;">Unit Price</th>
+                        <th class="right" style="width: 20%%;">Total</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -348,15 +363,15 @@ public class EmailService {
             <table class="totals-table">
                 <tr>
                     <td class="label">Subtotal:</td>
-                    <td>৳ %.2f</td>
+                    <td><span class="taka">৳</span> %.2f</td>
                 </tr>
                 <tr>
                     <td class="label">Shipping:</td>
-                    <td>৳ %.2f</td>
+                    <td><span class="taka">৳</span> %.2f</td>
                 </tr>
                 <tr class="grand-total">
                     <td class="label" style="color: #E91E63;">Total:</td>
-                    <td>৳ %.2f</td>
+                    <td><span class="taka">৳</span> %.2f</td>
                 </tr>
             </table>
 
@@ -369,15 +384,16 @@ public class EmailService {
         </html>
         """,
                 // 4. Inject variables into the HTML in the exact order they appear above
-                invoice.getInvoiceNumber(),
+                invoice.getInvoiceNumber() != null ? org.springframework.web.util.HtmlUtils.htmlEscape(invoice.getInvoiceNumber()) : "",
                 invoiceDate,
 
                 // Customer Details
-                order.getName(),
-                order.getPhoneNumber(),
-                order.getEmail() != null ? order.getEmail() : "N/A",
-                order.getShippingAddress(), order.getArea(),
-                order.getCity(),
+                org.springframework.web.util.HtmlUtils.htmlEscape(order.getName()),
+                org.springframework.web.util.HtmlUtils.htmlEscape(order.getPhoneNumber()),
+                order.getEmail() != null ? org.springframework.web.util.HtmlUtils.htmlEscape(order.getEmail()) : "N/A",
+                org.springframework.web.util.HtmlUtils.htmlEscape(order.getShippingAddress()),
+                org.springframework.web.util.HtmlUtils.htmlEscape(order.getArea()),
+                org.springframework.web.util.HtmlUtils.htmlEscape(order.getCity()),
 
                 // Order Details
                 order.getId(),
@@ -398,6 +414,16 @@ public class EmailService {
         try (java.io.ByteArrayOutputStream os = new java.io.ByteArrayOutputStream()) {
             com.openhtmltopdf.pdfboxout.PdfRendererBuilder builder = new com.openhtmltopdf.pdfboxout.PdfRendererBuilder();
             builder.useFastMode();
+
+            // PROGRAMMATICALLY REGISTER THE FONT:
+            builder.useFont(() -> {
+                try {
+                    return new org.springframework.core.io.ClassPathResource("fonts/SolaimanLipi.ttf").getInputStream();
+                } catch (Exception e) {
+                    throw new RuntimeException("Could not load SolaimanLipi.ttf font file", e);
+                }
+            }, "SolaimanLipi");
+
             builder.withHtmlContent(htmlTemplate, null);
             builder.toStream(os);
             builder.run();

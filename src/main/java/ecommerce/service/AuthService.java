@@ -14,4 +14,5 @@ public interface AuthService {
     LoginResponse refreshToken(HttpServletRequest request, HttpServletResponse servletResponse);
     String forgotPassword(String emailOrPhone);
     String resetPassword(String emailOrPhone, String otp, String newPassword);
+    LoginResponse generateGuestToken(HttpServletResponse servletResponse);
 }

@@ -50,6 +50,7 @@ public class SecurityConfig {
                         "sitemap.xml",
                         "/api/v1/product/similar/{productId}",
                         "/api/v1/user/refreshAccessToken",
+                        "/api/v1/auth/guest",
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
                         "/swagger-ui.html")

@@ -5,9 +5,12 @@ import com.cloudinary.utils.ObjectUtils;
 import ecommerce.entity.Product;
 import ecommerce.entity.ProductImage;
 import lombok.RequiredArgsConstructor;
+import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,8 +21,27 @@ import java.util.Map;
 public class ImageUtil {
 
     private final Cloudinary cloudinary;
+
+    /**
+     * Compresses the image to a maximum of 80% quality and 1920x1080 resolution
+     */
+    private byte[] compressImage(byte[] imageBytes) throws IOException {
+        ByteArrayInputStream bais = new ByteArrayInputStream(imageBytes);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        Thumbnails.of(bais)
+                .size(1920, 1080)
+                .outputQuality(0.8)
+                .toOutputStream(baos);
+
+        return baos.toByteArray();
+    }
+
     public String uploadFile(MultipartFile file) throws IOException {
-        Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
+        // Compress image before uploading
+        byte[] compressedImageBytes = compressImage(file.getBytes());
+
+        Map<String, Object> uploadResult = cloudinary.uploader().upload(compressedImageBytes,
                 ObjectUtils.asMap(
                         "resource_type", "auto",
                         "quality", "auto",
