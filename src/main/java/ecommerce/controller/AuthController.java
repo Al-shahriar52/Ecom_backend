@@ -12,4 +12,5 @@ public interface AuthController {
     ResponseEntity<?> login(LoginRequest loginRequest, HttpServletResponse servletResponse);
     ResponseEntity<?> verifyOtp(VerifyOtpRequest request);
     ResponseEntity<?> forgotPassword(ForgotPasswordRequest request);
+    ResponseEntity<?> guestUser(HttpServletResponse servletResponse);
 }

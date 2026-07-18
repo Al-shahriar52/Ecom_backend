@@ -27,6 +27,8 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -41,8 +43,9 @@ public class OrderServiceImpl implements OrderService {
     private final TokenUtil tokenUtil;
     private final InvoiceRepository invoiceRepository;
     private final EmailService emailService;
+    private final UserRepository userRepository;
 
-    @Override
+    /*@Override
     @Transactional
     public Long placeOrder(HttpServletRequest servletRequest, OrderRequest request) {
         // --- FETCH USER ---
@@ -152,13 +155,174 @@ public class OrderServiceImpl implements OrderService {
 
         return savedOrder.getId();
     }
-
+*/
     private void clearUserCart(User user) {
         cartRepository.findByUser(user).ifPresent(cart -> {
             cartItemRepository.deleteAllByCartId(cart.getId());
             cart.getItems().clear();
             cartRepository.save(cart);
         });
+    }
+
+    @Override
+    @Transactional
+    public Long placeOrder(HttpServletRequest servletRequest, OrderRequest request) {
+        // --- FETCH CURRENT SESSION USER ---
+        User currentUser = tokenUtil.extractUserInfo(servletRequest);
+        User finalOrderUser = currentUser;
+
+        // --- LOOKUP DB FOR COLLISIONS (Using your 'phone' entity property) ---
+        Optional<User> userWithEmail = userRepository.findByEmail(request.getEmail());
+        Optional<User> userWithPhone = userRepository.findByPhone(request.getPhone());
+
+        boolean emailExistsElsewhere = userWithEmail.isPresent();
+        boolean phoneExistsElsewhere = userWithPhone.isPresent();
+
+        // Check if current session user is a guest based on your entity's 'status' field
+        boolean isCurrentGuest = (currentUser.getStatus() == null || !currentUser.getStatus());
+
+        if (isCurrentGuest) {
+            // === CASE 1: Checkout email belongs to an existing account (EMAIL PRIORITY) ===
+            if (emailExistsElsewhere) {
+                finalOrderUser = userWithEmail.get();
+                // Skip updating the user profile entirely to avoid altering an active user's account details
+            }
+
+            // === CASE 3: Guest session already has an email, but inputs a completely DIFFERENT email ===
+            else if (currentUser.getEmail() != null && !currentUser.getEmail().trim().isEmpty()
+                    && !currentUser.getEmail().equalsIgnoreCase(request.getEmail())) {
+
+                // Generate a fresh guest entity to prevent overwriting historical guest data
+                User newGuest = new User();
+                newGuest.setName(request.getName());
+                newGuest.setEmail(request.getEmail());
+                newGuest.setPhone(request.getPhone()); // Matches entity field: phone
+
+                newGuest.setPassword(java.util.UUID.randomUUID().toString());
+
+                // Explicitly set role if you have a default role setter, e.g., newGuest.getRoles().add(Role.GUEST);
+                newGuest.setStatus(false); // Matches entity field: status
+
+                finalOrderUser = userRepository.save(newGuest);
+            }
+
+            // === CASE 2: Clean slate guest session (No email on token, and input email is brand new) ===
+            else {
+                currentUser.setName(request.getName());
+                currentUser.setEmail(request.getEmail());
+
+                // Only save the phone number to the profile if it doesn't belong to another registered account
+                if (!phoneExistsElsewhere) {
+                    currentUser.setPhone(request.getPhone()); // Matches entity field: phone
+                } else {
+                    System.out.println("Phone number belongs to someone else. Storing it on the Order table only.");
+                }
+
+                if (currentUser.getPassword() == null) {
+                    currentUser.setPassword(java.util.UUID.randomUUID().toString());
+                }
+
+                currentUser.setStatus(false); // Matches entity field: status
+                finalOrderUser = userRepository.save(currentUser);
+            }
+        }
+        else {
+            // === CASE 4: Logged-in / Registered User Flow ===
+
+            // 4a. Check if they are trying to use someone else's email
+            if (emailExistsElsewhere && !userWithEmail.get().getId().equals(currentUser.getId())) {
+                throw new RuntimeException("This email is already verified with another active account. Please use a different email.");
+            }
+
+            // 4b. Check if they are trying to use someone else's phone number
+            if (phoneExistsElsewhere && !userWithPhone.get().getId().equals(currentUser.getId())) {
+                throw new RuntimeException("This phone number is already verified with another active account. Please use a different phone number.");
+            }
+
+            // If it's their own data or clean new data, update their account profile details
+            currentUser.setName(request.getName());
+            currentUser.setEmail(request.getEmail());
+            currentUser.setPhone(request.getPhone()); // Matches entity field: phone
+            finalOrderUser = userRepository.save(currentUser);
+        }
+
+        // --- CREATE & POPULATE ORDER ---
+        // The order table ALWAYS receives the exact contact info typed in the checkout form fields.
+        Order order = new Order();
+        order.setUser(finalOrderUser);
+        order.setShippingAddress(request.getShippingAddress());
+        order.setCity(request.getCity());
+        order.setArea(request.getArea());
+        order.setPhoneNumber(request.getPhone()); // Keeps your order table's column mapping intact
+        order.setEmail(request.getEmail());
+        order.setName(request.getName());
+        order.setOrderNote(request.getOrderNote());
+        order.setPaymentMethod(request.getPaymentMethod());
+
+        // --- 1. CALCULATE SHIPPING ---
+        double shippingCharge = request.getCity().trim().equalsIgnoreCase("Dhaka") ? 60.00 : 120.00;
+        order.setShippingCost(shippingCharge);
+
+        // --- 2. PROCESS ITEMS ---
+        double itemsTotal = 0.0;
+        List<OrderItem> orderItems = new ArrayList<>();
+        for (OrderRequest.OrderItemRequest itemRequest : request.getItems()) {
+            Product product = productRepository.findById(itemRequest.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Product not found ID: " + itemRequest.getProductId()));
+
+            if (product.getQuantity() < itemRequest.getQuantity()) {
+                throw new RuntimeException("Not enough stock for: " + product.getName());
+            }
+
+            product.setQuantity(product.getQuantity() - itemRequest.getQuantity());
+            productRepository.save(product);
+
+            OrderItem orderItem = new OrderItem();
+            orderItem.setOrder(order);
+            orderItem.setProduct(product);
+            orderItem.setQuantity(itemRequest.getQuantity());
+            orderItem.setPrice(product.getDiscountedPrice());
+            orderItems.add(orderItem);
+
+            itemsTotal += (orderItem.getPrice() * itemRequest.getQuantity());
+        }
+
+        order.setTotalAmount(itemsTotal + shippingCharge);
+        order.setOrderItems(orderItems);
+
+        // --- 3. STATUS SETUP ---
+        if (request.getPaymentMethod() == PaymentMethod.COD) {
+            order.setPaymentStatus(PaymentStatus.PENDING);
+            order.setOrderStatus(OrderStatus.CONFIRMED);
+        } else {
+            order.setPaymentStatus(PaymentStatus.PENDING);
+            order.setOrderStatus(OrderStatus.PENDING);
+        }
+
+        // --- 4. SAVE ORDER ---
+        Order savedOrder = orderRepository.save(order);
+
+        // --- 5. GENERATE & SAVE INVOICE ---
+        Invoice invoice = new Invoice();
+        invoice.setOrder(savedOrder);
+        invoice.setInvoiceNumber("INV-" + (10000 + savedOrder.getId()));
+        invoice.setSubTotal(itemsTotal);
+        invoice.setShippingAmount(shippingCharge);
+        invoice.setDiscountAmount(0.0);
+        invoice.setTaxAmount(0.0);
+        invoice.setTotalAmount(savedOrder.getTotalAmount());
+        invoice.setIssuedAt(java.time.LocalDateTime.now());
+        invoice.setStatus(InvoiceStatus.UNPAID);
+        invoice.setDueDate(request.getPaymentMethod() == PaymentMethod.COD ?
+                java.time.LocalDateTime.now().plusDays(7) : java.time.LocalDateTime.now().plusHours(24));
+        invoiceRepository.save(invoice);
+
+        // --- 6. CLEAR CART & CONFIRM ---
+        // Clear the cart of the active session user who placed the items in it
+        clearUserCart(currentUser);
+        emailService.sendOrderConfirmationEmail(finalOrderUser, savedOrder, invoice);
+
+        return savedOrder.getId();
     }
 
     @Override

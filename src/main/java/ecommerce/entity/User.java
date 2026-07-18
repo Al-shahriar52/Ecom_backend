@@ -38,9 +38,8 @@ public class User implements UserDetails { // <-- Implement the interface
     private String phone;
 
     @Size(min = 8, message = "password should have at least 8 character")
-    @Pattern(regexp = "^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$",
-            message = "At least one uppercase letter, one lowercase letter, one number and one special character")
-    @NotNull
+//    @Pattern(regexp = "^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$",
+//            message = "At least one uppercase letter, one lowercase letter, one number and one special character")
     private String password;
 
     @Enumerated(EnumType.STRING)

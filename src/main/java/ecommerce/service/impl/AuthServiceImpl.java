@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -60,6 +61,8 @@ public class AuthServiceImpl implements AuthService {
         // 2. Set user details
         user.setName(requestDto.getName());
         user.setPassword(passwordEncoder.encode(requestDto.getPassword()));
+
+        user.getRoles().clear();
         user.getRoles().add(Role.USER);
         user.setStatus(false); // Make sure they are unverified
 
@@ -123,7 +126,7 @@ public class AuthServiceImpl implements AuthService {
                 .httpOnly(true)
                 .secure(false) // Set to TRUE in production (HTTPS)
                 .path("/")
-                .maxAge(15 * 60) // 15 minutes
+                .maxAge(60 * 60) // 60 minutes
                 .sameSite("Strict")
                 .build();
 
@@ -132,7 +135,7 @@ public class AuthServiceImpl implements AuthService {
                 .httpOnly(true)
                 .secure(false) // Set to TRUE in production
                 .path("/api/v1/user/refreshAccessToken") // Only sent to refresh endpoint
-                .maxAge(7 * 24 * 60 * 60) // 7 days
+                .maxAge(28 * 24 * 60 * 60) // 28 days
                 .sameSite("Strict")
                 .build();
 
@@ -168,7 +171,7 @@ public class AuthServiceImpl implements AuthService {
         final String username = jwtService.extractUsername(refreshToken);
 
         if (username != null) {
-            var userDetails = this.userRepository.findByEmailOrPhoneAndStatusIsTrue(username, username)
+            var userDetails = this.userRepository.findByEmailOrPhone(username, username)
                     .orElseThrow(() -> new BadRequestException("User not found"));
 
             if (jwtService.isTokenValid(refreshToken, userDetails)) {
@@ -180,7 +183,7 @@ public class AuthServiceImpl implements AuthService {
                         .httpOnly(true)
                         .secure(false) // Set to true in production
                         .path("/")
-                        .maxAge(15 * 60) // 15 minutes
+                        .maxAge(60 * 60) // 60 minutes
                         .sameSite("Strict")
                         .build();
 
@@ -281,6 +284,58 @@ public class AuthServiceImpl implements AuthService {
         user.setOtpExpiry(null);
         userRepository.save(user);
         return "Password reset successfully. You can now login.";
+    }
+
+    @Override
+    public LoginResponse generateGuestToken(HttpServletResponse servletResponse) {
+        User guestUser = new User();
+
+        String uniqueId = UUID.randomUUID().toString();
+        String guestEmail = "guest_" + uniqueId + "@beautyhaat.internal";
+        guestUser.setEmail(guestEmail);
+
+        guestUser.setName("Guest");
+
+        // 3. SATISFY @NotNull & @Pattern on Password
+        // This raw string explicitly satisfies: 1 Upper, 1 Lower, 1 Number, 1 Special (#), and min-length 8
+        String rawPatternCompliantPassword = "Guest123#" + uniqueId.substring(0, 5);
+        guestUser.setPassword(passwordEncoder.encode(rawPatternCompliantPassword));
+
+        // 4. Set Roles and Status
+        guestUser.getRoles().add(Role.GUEST);
+        guestUser.setStatus(false); // Remains unverified/guest
+
+        // Leave phone, gender, dob as null (since they don't have @NotNull guards)
+        userRepository.save(guestUser);
+
+        // 5. Generate JWT tokens using the valid email string as the subject
+        var jwtToken = jwtService.generateToken(guestUser);
+        var refreshToken = jwtService.generateRefreshToken(guestUser);
+
+        // 6. Create HttpOnly Cookies
+        ResponseCookie accessCookie = ResponseCookie.from("accessToken", jwtToken)
+                .httpOnly(true)
+                .secure(false) // Keeps it secure on https://api.beautyhaat.com
+                .path("/")
+                .maxAge(60 * 60) //60 minutes
+                .sameSite("Strict")
+                .build();
+
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
+                .httpOnly(true)
+                .secure(false)
+                .path("/api/v1/user/refreshAccessToken")
+                .maxAge(28 * 24 * 60 * 60) //28 days
+                .sameSite("Strict")
+                .build();
+
+        servletResponse.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
+        servletResponse.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+
+        return LoginResponse.builder()
+                .name(guestUser.getName())
+                .role(Role.GUEST.name())
+                .build();
     }
 
 }

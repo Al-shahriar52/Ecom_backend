@@ -67,4 +67,10 @@ public class AuthControllerImpl implements AuthController {
         String message = authService.resetPassword(request.getEmailOrPhone(), request.getOtp(), request.getPassword());
         return new ResponseEntity<>(GenericResponseDto.success(message, null, HttpStatus.OK.value()), HttpStatus.OK);
     }
+
+    @PostMapping("/guest")
+    public ResponseEntity<?> guestUser(HttpServletResponse servletResponse) {
+        LoginResponse loginResponse = authService.generateGuestToken(servletResponse);
+        return new ResponseEntity<>(GenericResponseDto.success("Guest user creation successfully", loginResponse, HttpStatus.OK.value()), HttpStatus.OK);
+    }
 }
