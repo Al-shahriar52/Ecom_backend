@@ -91,8 +91,13 @@ public class CartServiceImpl implements CartService {
 
         User user = tokenUtil.extractUserInfo(servletRequest);
 
-        Cart cart = cartRepository.findByUser(user).orElseThrow(() ->
-                new ResourceNotFound("Cart", "user", user.getId()));
+        Cart cart = cartRepository.findByUser(user).orElse(null);
+        if (cart == null) {
+            CartItemListDto emptyCart = new CartItemListDto();
+            emptyCart.setItems(List.of());
+            emptyCart.setTotalPrice(0.0);
+            return emptyCart;
+        }
 
         List<CartItem> cartItems = cartItemRepository.findByCartAndIsActiveTrue(cart);
         List<Long> productIds = cartItems.stream()
