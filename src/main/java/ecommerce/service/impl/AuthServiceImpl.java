@@ -315,7 +315,7 @@ public class AuthServiceImpl implements AuthService {
         // 6. Create HttpOnly Cookies
         ResponseCookie accessCookie = ResponseCookie.from("accessToken", jwtToken)
                 .httpOnly(true)
-                .secure(false) // Keeps it secure on https://api.beautyhaat.com
+                .secure(true) // Keeps it secure on https://api.beautyhaat.com
                 .path("/")
                 .maxAge(60 * 60) //60 minutes
                 .sameSite("Strict")
@@ -323,7 +323,7 @@ public class AuthServiceImpl implements AuthService {
 
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(true)
-                .secure(false)
+                .secure(true)
                 .path("/api/v1/user/refreshAccessToken")
                 .maxAge(28 * 24 * 60 * 60) //28 days
                 .sameSite("Strict")
