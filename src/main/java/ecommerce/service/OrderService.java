@@ -12,7 +12,7 @@ public interface OrderService {
     OrderDto update(OrderDto orderDto, Long orderId);
     OrderResponse search(int pageNo, int pageSize, String sortBy, String query);
     String delete(Long orderId);
-    OrderConfirmationResponse getOrderById(Long id);
+    OrderConfirmationResponse getOrderById(HttpServletRequest servletRequest, Long id);
 
     OrderResponse myOrders(HttpServletRequest servletRequest, int pageNo, int pageSize);
     byte[] generateInvoice(Long orderId);

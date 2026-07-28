@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 public interface OrderController {
 
     ResponseEntity<?> placeOrder(HttpServletRequest servletRequest, OrderRequest orderRequest);
-    ResponseEntity<?> getOrderById(Long orderId);
+    ResponseEntity<?> getOrderById(HttpServletRequest servletRequest, Long orderId);
     ResponseEntity<?> update(OrderDto orderDto, Long orderId);
     ResponseEntity<?> search(int pageNo, int pageSize, String sortBy, String query);
     ResponseEntity<?> delete(Long orderId);

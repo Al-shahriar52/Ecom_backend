@@ -35,9 +35,9 @@ public class OrderControllerImpl implements OrderController {
 
     @Override
     @GetMapping("/{id}")
-    public ResponseEntity<?> getOrderById(@PathVariable Long id) {
+    public ResponseEntity<?> getOrderById(HttpServletRequest servletRequest, @PathVariable Long id) {
         try {
-            OrderConfirmationResponse order = orderService.getOrderById(id);
+            OrderConfirmationResponse order = orderService.getOrderById(servletRequest, id);
             return new ResponseEntity<>(GenericResponseDto.success("Order information fetched successfully", order, HttpStatus.OK.value()), HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(GenericResponseDto.error("Order fetching error", e.getMessage(), HttpStatus.BAD_REQUEST.value()), HttpStatus.BAD_REQUEST);

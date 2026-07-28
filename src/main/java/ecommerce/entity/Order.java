@@ -71,4 +71,6 @@ public class Order {
     @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @ToString.Exclude
     private Delivery delivery;
+
+    private Long guestUserId;
 }
