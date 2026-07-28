@@ -9,6 +9,7 @@ import ecommerce.enums.InvoiceStatus;
 import ecommerce.enums.OrderStatus;
 import ecommerce.enums.PaymentMethod;
 import ecommerce.enums.PaymentStatus;
+import ecommerce.exceptionHandling.BadRequestException;
 import ecommerce.exceptionHandling.ResourceNotFound;
 import ecommerce.repository.*;
 import ecommerce.service.OrderService;
@@ -25,10 +26,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -45,117 +43,6 @@ public class OrderServiceImpl implements OrderService {
     private final EmailService emailService;
     private final UserRepository userRepository;
 
-    /*@Override
-    @Transactional
-    public Long placeOrder(HttpServletRequest servletRequest, OrderRequest request) {
-        // --- FETCH USER ---
-        User user = tokenUtil.extractUserInfo(servletRequest);
-        Order order = new Order();
-        order.setUser(user);
-        order.setShippingAddress(request.getShippingAddress());
-        order.setCity(request.getCity());
-        order.setArea(request.getArea());
-        order.setPhoneNumber(request.getPhone());
-        order.setEmail(request.getEmail());
-        order.setName(request.getName());
-        order.setOrderNote(request.getOrderNote());
-        order.setPaymentMethod(request.getPaymentMethod());
-
-        // --- 1. CALCULATE SHIPPING ---
-        double shippingCharge;
-
-        if (request.getCity().trim().equalsIgnoreCase("Dhaka")) {
-            shippingCharge = 60.00;
-        } else {
-            shippingCharge = 120.00;
-        }
-        order.setShippingCost(shippingCharge);
-
-        // --- 2. PROCESS ITEMS ---
-        double itemsTotal = 0.0;
-        List<OrderItem> orderItems = new ArrayList<>();
-
-        for (OrderRequest.OrderItemRequest itemRequest : request.getItems()) {
-            Product product = productRepository.findById(itemRequest.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Product not found ID: " + itemRequest.getProductId()));
-
-            // Stock Check
-            if (product.getQuantity() < itemRequest.getQuantity()) {
-                throw new RuntimeException("Not enough stock for: " + product.getName());
-            }
-
-            // Reduce Stock
-            product.setQuantity(product.getQuantity() - itemRequest.getQuantity());
-            productRepository.save(product);
-
-            // Create OrderItem
-            OrderItem orderItem = new OrderItem();
-            orderItem.setOrder(order);
-            orderItem.setProduct(product);
-            orderItem.setQuantity(itemRequest.getQuantity());
-            orderItem.setPrice(product.getDiscountedPrice());
-
-            orderItems.add(orderItem);
-
-            // Math is simpler with Double
-            double lineTotal = orderItem.getPrice() * itemRequest.getQuantity();
-            itemsTotal += lineTotal;
-        }
-
-        // Final Total
-        order.setTotalAmount(itemsTotal + shippingCharge);
-        order.setOrderItems(orderItems);
-
-        // --- 3. STATUS SETUP ---
-        if (request.getPaymentMethod() == PaymentMethod.COD) {
-            // COD Logic
-            order.setPaymentStatus(PaymentStatus.PENDING);
-            order.setOrderStatus(OrderStatus.CONFIRMED);
-        } else {
-            order.setPaymentStatus(PaymentStatus.PENDING);
-            order.setOrderStatus(OrderStatus.PENDING);
-        }
-
-        // --- 4. SAVE ORDER ---
-        // Save the order first so the database generates the primary key (ID)
-        Order savedOrder = orderRepository.save(order);
-
-        // --- 5. GENERATE & SAVE INVOICE ---
-        Invoice invoice = new Invoice();
-        invoice.setOrder(savedOrder);
-
-        // Generate a clean invoice number (e.g., INV-10005)
-        invoice.setInvoiceNumber("INV-" + (10000 + savedOrder.getId()));
-
-        // Populate Financials directly from our previous calculations
-        invoice.setSubTotal(itemsTotal);
-        invoice.setShippingAmount(shippingCharge);
-        invoice.setDiscountAmount(0.0); // Update this if you add promo codes later
-        invoice.setTaxAmount(0.0);      // Update this if you add VAT/Tax later
-        invoice.setTotalAmount(savedOrder.getTotalAmount()); // itemsTotal + shippingCharge
-
-        // Set Status & Dates
-        invoice.setIssuedAt(java.time.LocalDateTime.now());
-        invoice.setStatus(InvoiceStatus.UNPAID);
-
-        // Optional: Set a due date based on payment method
-        if (request.getPaymentMethod() == PaymentMethod.COD) {
-            invoice.setDueDate(java.time.LocalDateTime.now().plusDays(7)); // COD has a longer expected payment window
-        } else {
-            invoice.setDueDate(java.time.LocalDateTime.now().plusHours(24)); // Online payments expire quickly
-        }
-
-        invoiceRepository.save(invoice);
-
-        // --- 6. CLEAR CART ---
-        clearUserCart(user);
-
-        // Sent safely right before return statement. Thread safe & non-blocking.
-        emailService.sendOrderConfirmationEmail(user, savedOrder, invoice);
-
-        return savedOrder.getId();
-    }
-*/
     private void clearUserCart(User user) {
         cartRepository.findByUser(user).ifPresent(cart -> {
             cartItemRepository.deleteAllByCartId(cart.getId());
@@ -250,6 +137,7 @@ public class OrderServiceImpl implements OrderService {
         // The order table ALWAYS receives the exact contact info typed in the checkout form fields.
         Order order = new Order();
         order.setUser(finalOrderUser);
+        order.setGuestUserId(currentUser.getId());
         order.setShippingAddress(request.getShippingAddress());
         order.setCity(request.getCity());
         order.setArea(request.getArea());
@@ -379,10 +267,17 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderConfirmationResponse getOrderById(Long id) {
+    public OrderConfirmationResponse getOrderById(HttpServletRequest servletRequest, Long id) {
+        User user = tokenUtil.extractUserInfo(servletRequest);
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + id));
-        return mapToOrderResponse(order);
+
+        if (Objects.equals(order.getUser().getId(), user.getId()) || Objects.equals(order.getGuestUserId(), user.getId())) {
+            return mapToOrderResponse(order);
+        } else {
+            throw new BadRequestException("You are not authorized to view this order.");
+        }
+
     }
 
     @Override
