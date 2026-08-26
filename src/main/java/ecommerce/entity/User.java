@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Formula;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails; // <-- Import UserDetails
@@ -13,6 +14,7 @@ import org.springframework.security.core.userdetails.UserDetails; // <-- Import 
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -58,6 +60,29 @@ public class User implements UserDetails { // <-- Implement the interface
     private String otp;
 
     private LocalDateTime otpExpiry;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "account_state", nullable = false)
+    private AccountState accountState = AccountState.UNVERIFIED;
+
+    @Column(name = "avatar_variant", length = 20)
+    private String avatarVariant;
+
+    @Formula("(SELECT COUNT(o.id) FROM orders o WHERE o.user_id = id)")
+    private Integer orders;
+
+    private static final String[] VARIANTS = {
+            "emerald", "indigo", "coral", "amber", "violet", "teal"
+    };
+
+    @PrePersist
+    public void assignAvatarVariant() {
+        if (this.avatarVariant == null || this.avatarVariant.isBlank()) {
+            // Deterministic pick based on email hash (or user ID)
+            int index = Math.abs(this.email != null ? this.email.hashCode() : new Random().nextInt());
+            this.avatarVariant = VARIANTS[index % VARIANTS.length];
+        }
+    }
 
     // ========= UserDetails Method Implementations =========
 

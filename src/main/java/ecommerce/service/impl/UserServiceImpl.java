@@ -17,9 +17,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -114,6 +117,35 @@ public class UserServiceImpl implements UserService {
         response.setLast(listOfUser.isLast());
 
         return response;
+    }
+
+    public Map<String, Object> getAdminUserList(int pageNo, int pageSize, String search, String role, String status, String sortKey, String sortDir) {
+        Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+
+        // Map UI column keys to entity field names
+        String sortField = "id";
+        if ("name".equalsIgnoreCase(sortKey)) sortField = "name";
+        if ("createdAt".equalsIgnoreCase(sortKey)) sortField = "createdAt";
+
+        Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by(direction, sortField));
+        Specification<User> spec = UserSpecification.filterUsers(search, role, status);
+
+        Page<User> userPage = userRepository.findAll(spec, pageable);
+
+        List<UserDto> content = userPage.getContent().stream()
+                .map(this::mapToDto)
+                .toList();
+
+        Map<String, Object> meta = new HashMap<>();
+        meta.put("total", userPage.getTotalElements());
+        meta.put("page", pageNo + 1); // Return 1-indexed page for UI
+        meta.put("totalPages", userPage.getTotalPages());
+
+        Map<String, Object> responseData = new HashMap<>();
+        responseData.put("data", content);
+        responseData.put("meta", meta);
+
+        return responseData;
     }
 
     public UserDto mapToDto(User user) {
