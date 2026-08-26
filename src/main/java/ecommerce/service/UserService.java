@@ -1,6 +1,7 @@
 package ecommerce.service;
 
 import ecommerce.dto.UserDto;
+import ecommerce.dto.admin.user.UserStatsDto;
 import ecommerce.dto.pageResponse.UserResponse;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -14,4 +15,5 @@ public interface UserService {
     UserDto update(UserDto userDto, HttpServletRequest servletRequest);
     UserResponse search(int pageNo, int pageSize, String sortBy, String query);
     Map<String, Object> getAdminUserList(int pageNo, int pageSize, String search, String role, String status, String sortKey, String sortDir);
+    UserStatsDto getUserStats();
 }

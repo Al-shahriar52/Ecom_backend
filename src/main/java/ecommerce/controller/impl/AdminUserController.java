@@ -1,6 +1,7 @@
 package ecommerce.controller.impl;
 
 import ecommerce.dto.GenericResponseDto;
+import ecommerce.dto.admin.user.UserStatsDto;
 import ecommerce.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -32,6 +33,14 @@ public class AdminUserController {
 
         return ResponseEntity.ok(
                 GenericResponseDto.success("Users retrieved successfully", result, HttpStatus.OK.value())
+        );
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<GenericResponseDto<UserStatsDto>> getUserStats() {
+        UserStatsDto stats = userService.getUserStats();
+        return ResponseEntity.ok(
+                GenericResponseDto.success("User statistics retrieved successfully", stats, HttpStatus.OK.value())
         );
     }
 }

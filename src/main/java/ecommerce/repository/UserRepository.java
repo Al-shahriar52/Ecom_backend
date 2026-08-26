@@ -1,6 +1,7 @@
 package ecommerce.repository;
 
 import ecommerce.dto.UserDto;
+import ecommerce.entity.AccountState;
 import ecommerce.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,4 +32,8 @@ public interface UserRepository extends JpaRepository<User,Long>, JpaSpecificati
             "AND u.createdAt < :cutoff " +
             "AND u.id NOT IN (SELECT DISTINCT o.user.id FROM Order o)")
     List<Long> findStaleGuestUserIds(@Param("cutoff") String cutoff);
+
+    long countByAccountState(AccountState accountState);
+
+    long countByCreatedAtAfter(LocalDateTime date);
 }

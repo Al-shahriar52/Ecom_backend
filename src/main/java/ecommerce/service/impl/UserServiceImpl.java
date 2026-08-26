@@ -1,7 +1,9 @@
 package ecommerce.service.impl;
 
 import ecommerce.dto.UserDto;
+import ecommerce.dto.admin.user.UserStatsDto;
 import ecommerce.dto.pageResponse.UserResponse;
+import ecommerce.entity.AccountState;
 import ecommerce.entity.User;
 import ecommerce.exceptionHandling.BadRequestException;
 import ecommerce.exceptionHandling.ResourceNotFound;
@@ -20,6 +22,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,9 +42,7 @@ public class UserServiceImpl implements UserService {
     public UserDto add(UserDto userDto) {
 
         User user = mapToEntity(userDto);
-
-        String formattedTime = dateTimeUtil.convert();
-        user.setCreatedAt(formattedTime);
+        user.setCreatedAt(LocalDateTime.now());
         User newUser = userRepository.save(user);
 
         return mapToDto(newUser);
@@ -146,6 +149,37 @@ public class UserServiceImpl implements UserService {
         responseData.put("meta", meta);
 
         return responseData;
+    }
+
+    @Override
+    public UserStatsDto getUserStats() {
+        long totalUsers = userRepository.count();
+        long activeUsers = userRepository.countByAccountState(AccountState.ACTIVE);
+        long unverifiedUsers = userRepository.countByAccountState(AccountState.UNVERIFIED);
+        long suspendedUsers = userRepository.countByAccountState(AccountState.SUSPENDED);
+
+        // Calculate users registered since start of current month
+        LocalDateTime firstDayOfMonth = LocalDate.now().with(TemporalAdjusters.firstDayOfMonth()).atStartOfDay();
+        long newThisMonth = userRepository.countByCreatedAtAfter(firstDayOfMonth);
+
+        // Calculate percentages safely to avoid division by zero
+        double activePercentage = totalUsers > 0
+                ? Math.round(((double) activeUsers / totalUsers * 100) * 10.0) / 10.0
+                : 0.0;
+
+        double suspendedPercentage = totalUsers > 0
+                ? Math.round(((double) suspendedUsers / totalUsers * 100) * 10.0) / 10.0
+                : 0.0;
+
+        return UserStatsDto.builder()
+                .totalUsers(totalUsers)
+                .newThisMonth(newThisMonth)
+                .activeUsers(activeUsers)
+                .activePercentage(activePercentage)
+                .unverifiedUsers(unverifiedUsers)
+                .suspendedUsers(suspendedUsers)
+                .suspendedPercentage(suspendedPercentage)
+                .build();
     }
 
     public UserDto mapToDto(User user) {

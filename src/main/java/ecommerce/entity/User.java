@@ -49,7 +49,7 @@ public class User implements UserDetails { // <-- Implement the interface
     private Set<Role> roles = new HashSet<>();
 
     @CreationTimestamp
-    private String createdAt;
+    private LocalDateTime createdAt;
 
     private Boolean status = false;
 
