@@ -19,35 +19,61 @@ public class SmsService {
     @Value("${bdbulksms.api-url:https://api.bdbulksms.net/api.php}")
     private String apiUrl;
 
-    // RestTemplate is built into Spring Web for making API calls
     private final RestTemplate restTemplate = new RestTemplate();
 
+    /**
+     * Sends OTP via SMS in Bangla Font
+     */
     @Async
     public void sendOtpSms(String toPhoneNumber, String otp) {
-        try {
-            // 1. Prepare the message
-            String messageText = "Your BeautyHaat verification code is: " + otp + ". Valid for 5 minutes.";
+        String messageText = "বিউটিহাট-এ আপনার ভেরিফিকেশন কোড: " + otp + "। কোডটি ৫ মিনিটের জন্য কার্যকর থাকবে।";
+        sendSms(toPhoneNumber, messageText);
+    }
 
-            // 2. Set Headers for a standard Form submission
+    /**
+     * Sends temporary password created by admin via SMS in Bangla Font
+     */
+    @Async
+    public void sendTemporaryPasswordSms(String toPhoneNumber, String name, String tempPassword) {
+        String messageText = "প্রিয় " + name + ", বিউটিহাট-এ আপনার অ্যাকাউন্ট তৈরি করা হয়েছে। টেম্পোরারি পাসওয়ার্ড: " + tempPassword + " । অনুগ্রহ করে লগইন করে পাসওয়ার্ড পরিবর্তন করুন।";
+        sendSms(toPhoneNumber, messageText);
+    }
+
+    /**
+     * Sends order confirmation details via SMS in Bangla Font
+     */
+    @Async
+    public void sendOrderConfirmationSms(String toPhoneNumber, String orderId, double totalAmount) {
+        String messageText = String.format("বিউটিহাট-এ আপনার অর্ডার #%s সফলভাবে নিশ্চিত করা হয়েছে! মোট টাকা: ৳%.2f। আমাদের সাথে থাকার জন্য ধন্যবাদ!", orderId, totalAmount);
+        sendSms(toPhoneNumber, messageText);
+    }
+
+    /**
+     * Core reusable method to dispatch POST requests to BDBulkSMS
+     */
+    @Async
+    public void sendSms(String toPhoneNumber, String messageText) {
+        if (toPhoneNumber == null || toPhoneNumber.isBlank()) {
+            System.err.println("Skipping SMS dispatch: Phone number is missing.");
+            return;
+        }
+
+        try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-            // 3. Bind the required parameters mapping perfectly to BDBulkSMS docs
             MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
             map.add("token", token);
-            map.add("to", toPhoneNumber);
+            map.add("to", toPhoneNumber.trim());
             map.add("message", messageText);
 
             HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
-            // 4. Send the POST request to the Gateway
             String response = restTemplate.postForObject(apiUrl, request, String.class);
-
-            // Useful for checking if the SMS actually sent during testing
-            System.out.println("BDBulkSMS Response: " + response);
+            System.out.println("BDBulkSMS Response for " + toPhoneNumber + ": " + response);
 
         } catch (Exception e) {
-            System.err.println("Failed to send OTP SMS : " + e.getMessage());
+            System.err.println("Failed to send SMS to " + toPhoneNumber + ": " + e.getMessage());
         }
     }
 }

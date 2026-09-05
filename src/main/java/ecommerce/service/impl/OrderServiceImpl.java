@@ -44,6 +44,7 @@ public class OrderServiceImpl implements OrderService {
     private final EmailService emailService;
     private final UserRepository userRepository;
     private final ActivityService activityService;
+    private final SmsService smsService;
 
     private void clearUserCart(User user) {
         cartRepository.findByUser(user).ifPresent(cart -> {
@@ -211,6 +212,8 @@ public class OrderServiceImpl implements OrderService {
         // Clear the cart of the active session user who placed the items in it
         clearUserCart(currentUser);
         emailService.sendOrderConfirmationEmail(finalOrderUser, savedOrder, invoice);
+
+        smsService.sendOrderConfirmationSms(order.getPhoneNumber(), invoice.getInvoiceNumber(), savedOrder.getTotalAmount());
 
         activityService.logActivity(finalOrderUser.getId(), "Placed order ID: " + savedOrder.getId() + " with total amount: " + savedOrder.getTotalAmount());
         return savedOrder.getId();

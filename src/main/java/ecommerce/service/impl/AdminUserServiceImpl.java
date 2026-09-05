@@ -35,6 +35,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     private final OrderRepository orderRepository;
     private final ActivityRepository activityRepository;
     private final ActivityService activityService;
+    private final SmsService smsService;
     private static final SecureRandom RANDOM = new SecureRandom();
 
     @Override
@@ -68,6 +69,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         // 4. Send the EXACT unencoded raw password to email
         emailService.sendTemporaryPassword(savedUser.getEmail(), savedUser.getName(), rawTempPassword);
 
+        smsService.sendTemporaryPasswordSms(savedUser.getPhone(), savedUser.getName(), rawTempPassword);
         return mapEntityToDto(savedUser);
     }
 
