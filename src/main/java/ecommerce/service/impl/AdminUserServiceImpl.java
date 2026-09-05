@@ -35,9 +35,6 @@ public class AdminUserServiceImpl implements AdminUserService {
     private final OrderRepository orderRepository;
     private final ActivityRepository activityRepository;
     private final ActivityService activityService;
-    private final CartRepository cartRepository;
-
-    private static final String TEMP_PWD_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
     private static final SecureRandom RANDOM = new SecureRandom();
 
     @Override
@@ -47,29 +44,64 @@ public class AdminUserServiceImpl implements AdminUserService {
             throw new BadRequestException("User already exists with email: " + request.getEmail());
         }
 
-        if (userRepository.existsByPhone(request.getPhone())) {
+        if (request.getPhone() != null && !request.getPhone().isBlank() && userRepository.existsByPhone(request.getPhone())) {
             throw new BadRequestException("User already exists with phone: " + request.getPhone());
         }
 
         User user = new User();
         mapRequestToEntity(request, user);
 
-        // Generate temporary password
-        String rawTempPassword = generateTemporaryPassword();
+        // 1. Generate clean raw temporary password
+        String rawTempPassword = generateTemporaryPassword().trim();
+
+        // 2. Encode and assign password
         user.setPassword(passwordEncoder.encode(rawTempPassword));
 
-        // Default initial account state
-        user.setAccountState(AccountState.UNVERIFIED);
+        // 3. Set Active Account State and Status so Spring Security allows instant login
+        user.setAccountState(AccountState.ACTIVE); // Changed from UNVERIFIED to allow immediate login
         user.setStatus(true);
 
         User savedUser = userRepository.save(user);
 
         activityService.logActivity(savedUser.getId(), "Account created by Admin");
 
-        // Dispatch email notification with credentials
+        // 4. Send the EXACT unencoded raw password to email
         emailService.sendTemporaryPassword(savedUser.getEmail(), savedUser.getName(), rawTempPassword);
 
         return mapEntityToDto(savedUser);
+    }
+
+    // --- Helpers ---
+
+    private String generateTemporaryPassword() {
+        // Alphanumeric + standard non-problematic special chars
+        String upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+        String lower = "abcdefghijkmnpqrstuvwxyz";
+        String digits = "23456789";
+        String special = "!@#$";
+        String allChars = upper + lower + digits + special;
+
+        StringBuilder sb = new StringBuilder(10);
+        // Ensure at least one character from each set to satisfy security policies
+        sb.append(upper.charAt(RANDOM.nextInt(upper.length())));
+        sb.append(lower.charAt(RANDOM.nextInt(lower.length())));
+        sb.append(digits.charAt(RANDOM.nextInt(digits.length())));
+        sb.append(special.charAt(RANDOM.nextInt(special.length())));
+
+        for (int i = 4; i < 10; i++) {
+            sb.append(allChars.charAt(RANDOM.nextInt(allChars.length())));
+        }
+
+        // Shuffle chars
+        List<Character> letters = sb.toString().chars().mapToObj(c -> (char) c).collect(Collectors.toList());
+        Collections.shuffle(letters, RANDOM);
+
+        StringBuilder finalPwd = new StringBuilder();
+        for (Character c : letters) {
+            finalPwd.append(c);
+        }
+
+        return finalPwd.toString();
     }
 
     @Override
@@ -174,14 +206,6 @@ public class AdminUserServiceImpl implements AdminUserService {
     }
 
     // --- Helpers ---
-
-    private String generateTemporaryPassword() {
-        StringBuilder sb = new StringBuilder(8);
-        for (int i = 0; i < 8; i++) {
-            sb.append(TEMP_PWD_CHARS.charAt(RANDOM.nextInt(TEMP_PWD_CHARS.length())));
-        }
-        return sb.toString();
-    }
 
     private String getColumnValue(String[] values, Map<String, Integer> headerMap, String key) {
         Integer index = headerMap.get(key);
