@@ -31,9 +31,11 @@ public interface UserRepository extends JpaRepository<User,Long>, JpaSpecificati
     @Query("SELECT u.id FROM User u WHERE u.email LIKE 'guest|_%@beautyhaat.internal' ESCAPE '|' " +
             "AND u.createdAt < :cutoff " +
             "AND u.id NOT IN (SELECT DISTINCT o.user.id FROM Order o)")
-    List<Long> findStaleGuestUserIds(@Param("cutoff") String cutoff);
+    List<Long> findStaleGuestUserIds(@Param("cutoff") LocalDateTime cutoff);
 
     long countByAccountState(AccountState accountState);
 
     long countByCreatedAtAfter(LocalDateTime date);
+    boolean existsByEmail(String email);
+    boolean existsByPhone(String phone);
 }

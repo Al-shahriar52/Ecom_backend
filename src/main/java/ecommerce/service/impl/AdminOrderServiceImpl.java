@@ -11,6 +11,7 @@ import ecommerce.exceptionHandling.BadRequestException;
 import ecommerce.repository.DeliveryRepository;
 import ecommerce.repository.InvoiceRepository;
 import ecommerce.repository.OrderRepository;
+import ecommerce.service.ActivityService;
 import ecommerce.service.AdminOrderService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class AdminOrderServiceImpl implements AdminOrderService {
     private final InvoiceRepository invoiceRepository;
     private final SteadfastService steadfastService;
     private final DeliveryRepository deliveryRepository;
+    private final ActivityService activityService;
 
     @Override
     public Page<AdminOrderListDTO> getAdminOrders(
@@ -203,6 +205,7 @@ public class AdminOrderServiceImpl implements AdminOrderService {
             JsonNode singleResponseNode = steadfastService.sendSinglePickupRequest(singleOrder, singleInvoice);
             processResponseData(singleResponseNode, validOrdersForPickup, invoiceMap, deliveriesToSave, ordersToUpdate);
 
+            activityService.logActivity(validOrdersForPickup.get(0).getUser().getId(), "Parcel pickup requested for invoice: " + singleInvoice.getInvoiceNumber());
         } else {
 
             // --- BULK ORDERS ---
@@ -227,6 +230,7 @@ public class AdminOrderServiceImpl implements AdminOrderService {
 
                         // Process each one individually
                         processResponseData(fallbackResponse, List.of(order), invoiceMap, deliveriesToSave, ordersToUpdate);
+                        activityService.logActivity(order.getUser().getId(), "Parcel pickup requested for invoice: " + inv.getInvoiceNumber());
                     } catch (Exception ex) {
                         System.err.println("Fallback failed for invoice " + invoiceMap.get(order.getId()).getInvoiceNumber() + ": " + ex.getMessage());
                     }

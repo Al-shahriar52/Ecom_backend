@@ -23,7 +23,7 @@ public class UserDto {
     private String dob;
     private Set<Role> roles;
     private AccountState accountState;
-    private String createdAt;
+    private LocalDateTime createdAt;
     private Integer orders;
     private String avatarVariant;
 }

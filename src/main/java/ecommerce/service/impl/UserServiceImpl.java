@@ -8,6 +8,7 @@ import ecommerce.entity.User;
 import ecommerce.exceptionHandling.BadRequestException;
 import ecommerce.exceptionHandling.ResourceNotFound;
 import ecommerce.repository.UserRepository;
+import ecommerce.service.ActivityService;
 import ecommerce.service.UserService;
 import ecommerce.utils.DateTimeUtil;
 import ecommerce.utils.TokenUtil;
@@ -38,6 +39,7 @@ public class UserServiceImpl implements UserService {
     private final DateTimeUtil dateTimeUtil;
     private final ModelMapper mapper;
     private final TokenUtil tokenUtil;
+    private final ActivityService activityService;
 
     public UserDto add(UserDto userDto) {
 
@@ -45,6 +47,7 @@ public class UserServiceImpl implements UserService {
         user.setCreatedAt(LocalDateTime.now());
         User newUser = userRepository.save(user);
 
+        activityService.logActivity(newUser.getId(), "New user created: " + newUser.getName());
         return mapToDto(newUser);
     }
 
@@ -94,6 +97,8 @@ public class UserServiceImpl implements UserService {
         user.setDob(userDto.getDob());
         user.setGender(userDto.getGender());
         User updateInfo = userRepository.save(user);
+
+        activityService.logActivity(updateInfo.getId(), "User updated their profile information.");
         return mapToDto(updateInfo);
     }
 

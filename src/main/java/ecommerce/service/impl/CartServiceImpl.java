@@ -14,32 +14,27 @@ import ecommerce.exceptionHandling.ResourceNotFoundException;
 import ecommerce.repository.CartItemRepository;
 import ecommerce.repository.CartRepository;
 import ecommerce.repository.ProductRepository;
+import ecommerce.service.ActivityService;
 import ecommerce.service.CartService;
 import ecommerce.utils.TokenUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class CartServiceImpl implements CartService {
 
     private final ProductRepository productRepository;
 
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
-
     private final TokenUtil tokenUtil;
-
-    public CartServiceImpl(ProductRepository productRepository, CartRepository cartRepository,
-                           CartItemRepository cartItemRepository, TokenUtil tokenUtil) {
-        this.productRepository = productRepository;
-        this.cartRepository = cartRepository;
-        this.cartItemRepository = cartItemRepository;
-        this.tokenUtil = tokenUtil;
-    }
+    private final ActivityService activityService;
 
     @Override
     @Transactional
@@ -69,6 +64,8 @@ public class CartServiceImpl implements CartService {
             newItem.setActive(true);
             cartItemRepository.save(newItem);
         }
+
+        activityService.logActivity(tokenUtil.extractUserInfo(servletRequest).getId(), "Added product to cart: " + product.getId());
 
         return addItemDTO;
     }
@@ -136,6 +133,8 @@ public class CartServiceImpl implements CartService {
             throw new ResourceNotFoundException("Cart Item not found for the user");
         }
         cartItemRepository.delete(cartItem);
+
+        activityService.logActivity(user.getId(), "Deleted cart item: " + cartItemId);
         return cartItemId;
     }
 
@@ -186,6 +185,8 @@ public class CartServiceImpl implements CartService {
                 newItem.setActive(true);
                 cartItemRepository.save(newItem);
             }
+
+            activityService.logActivity(user.getId(), "Added product to cart: " + product.getId() + " Quantity: " + itemRequest.getQuantity());
         }
         return requestDtos;
     }

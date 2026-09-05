@@ -432,4 +432,48 @@ public class EmailService {
             throw new RuntimeException("Error generating PDF", e);
         }
     }
+
+    @Async
+    public void sendTemporaryPassword(String toEmail, String name, String tempPassword) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setTo(toEmail);
+            helper.setFrom("notification@beautyhaat.com");
+            helper.setSubject("Welcome to BeautyHaat - Your Temporary Password");
+
+            String htmlContent = """
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #E91E63; margin: 0;">BeautyHaat</h1>
+                </div>
+                <div style="background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                    <h2 style="color: #2c3e50; text-align: center; margin-top: 0;">Welcome Aboard!</h2>
+                    <p style="color: #2d3748; font-size: 16px;">Hello <strong>%s</strong>,</p>
+                    <p style="color: #6c757d; font-size: 15px; line-height: 1.5;">
+                        An account has been created for you by the administrator. Please use the temporary password below to log in:
+                    </p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <span style="display: inline-block; padding: 15px 30px; background-color: #f8f9fa; border: 2px dashed #E91E63; border-radius: 8px; font-size: 24px; font-weight: bold; color: #2c3e50; letter-spacing: 2px;">
+                            %s
+                        </span>
+                    </div>
+                    <p style="color: #e53e3e; font-size: 14px; text-align: center; font-weight: 500;">
+                        Please log in and update your password immediately for security reasons.
+                    </p>
+                </div>
+                <div style="text-align: center; margin-top: 20px; color: #a0aec0; font-size: 12px;">
+                    &copy; 2026 BeautyHaat. All rights reserved.
+                </div>
+            </div>
+            """.formatted(name, tempPassword);
+
+            helper.setText(htmlContent, true);
+            mailSender.send(message);
+
+        } catch (MessagingException e) {
+            System.err.println("Failed to send temporary password email to " + toEmail + ". Error: " + e.getMessage());
+        }
+    }
 }

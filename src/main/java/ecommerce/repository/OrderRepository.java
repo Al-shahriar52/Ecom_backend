@@ -44,4 +44,6 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
     @Modifying
     @Query("UPDATE Order o SET o.orderStatus = :status WHERE o.id IN :orderIds")
     int updateOrderStatusesByIds(@Param("orderIds") List<Long> orderIds, @Param("status") ecommerce.enums.OrderStatus status);
+
+    List<Order> findByUserId(Long userId);
 }

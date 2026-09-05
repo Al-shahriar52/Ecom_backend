@@ -12,6 +12,7 @@ import ecommerce.enums.PaymentStatus;
 import ecommerce.exceptionHandling.BadRequestException;
 import ecommerce.exceptionHandling.ResourceNotFound;
 import ecommerce.repository.*;
+import ecommerce.service.ActivityService;
 import ecommerce.service.OrderService;
 import ecommerce.utils.DateTimeUtil;
 import ecommerce.utils.TokenUtil;
@@ -42,6 +43,7 @@ public class OrderServiceImpl implements OrderService {
     private final InvoiceRepository invoiceRepository;
     private final EmailService emailService;
     private final UserRepository userRepository;
+    private final ActivityService activityService;
 
     private void clearUserCart(User user) {
         cartRepository.findByUser(user).ifPresent(cart -> {
@@ -210,6 +212,7 @@ public class OrderServiceImpl implements OrderService {
         clearUserCart(currentUser);
         emailService.sendOrderConfirmationEmail(finalOrderUser, savedOrder, invoice);
 
+        activityService.logActivity(finalOrderUser.getId(), "Placed order ID: " + savedOrder.getId() + " with total amount: " + savedOrder.getTotalAmount());
         return savedOrder.getId();
     }
 
@@ -234,6 +237,8 @@ public class OrderServiceImpl implements OrderService {
         }
 
         orderRepository.save(order);
+
+        activityService.logActivity(order.getUser().getId(), "Updated order ID: " + order.getId() + " delivery status to: " + orderDto.isDelivered() + " at " + formattedTime);
         return mapToDto(order);
     }
 
@@ -263,6 +268,8 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findById(orderId).orElseThrow(() ->
                 new ResourceNotFound("Order", "id", orderId));
         orderRepository.delete(order);
+
+        activityService.logActivity(order.getUser().getId(), "Deleted order ID: " + order.getId() + " at " + dateTimeUtil.convert());
         return "your order : " + order.getId() + " is deleted successfully.";
     }
 
@@ -272,7 +279,9 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + id));
 
-        if (Objects.equals(order.getUser().getId(), user.getId()) || Objects.equals(order.getGuestUserId(), user.getId())) {
+        if (Objects.equals(order.getUser().getId(), user.getId())
+                || Objects.equals(order.getGuestUserId(), user.getId())
+                || user.getRoles().stream().anyMatch(role -> role.equals(Role.ADMIN))) {
             return mapToOrderResponse(order);
         } else {
             throw new BadRequestException("You are not authorized to view this order.");
