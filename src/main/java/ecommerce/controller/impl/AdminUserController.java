@@ -2,20 +2,19 @@ package ecommerce.controller.impl;
 
 import ecommerce.dto.GenericResponseDto;
 import ecommerce.dto.UserDto;
-import ecommerce.dto.admin.user.BulkImportResponseDto;
-import ecommerce.dto.admin.user.UserDetailsResponseDto;
-import ecommerce.dto.admin.user.UserRequestDto;
-import ecommerce.dto.admin.user.UserStatsDto;
+import ecommerce.dto.admin.user.*;
 import ecommerce.service.AdminUserService;
 import ecommerce.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -103,5 +102,35 @@ public class AdminUserController {
         return ResponseEntity.ok(
                 GenericResponseDto.success(message, message, HttpStatus.OK.value())
         );
+    }
+
+    @PostMapping("/bulk-action")
+    public ResponseEntity<GenericResponseDto<String>> executeBulkAction(@Valid @RequestBody BulkActionRequestDto request) {
+        adminUserService.executeBulkAction(request);
+        return ResponseEntity.ok(
+                GenericResponseDto.success("Bulk action applied successfully", null, HttpStatus.OK.value())
+        );
+    }
+
+    @PostMapping("/{id}/resend-credentials")
+    public ResponseEntity<GenericResponseDto<String>> resendCredentials(@PathVariable Long id) {
+        adminUserService.resendCredentials(id);
+        return ResponseEntity.ok(
+                GenericResponseDto.success("Credentials sent", null, HttpStatus.OK.value())
+        );
+    }
+
+    @PostMapping("/export-csv")
+    public ResponseEntity<byte[]> exportUsersCsv(@RequestBody(required = false) Map<String, List<Long>> request) {
+        List<Long> userIds = request != null ? request.get("userIds") : null;
+        byte[] csvData = adminUserService.exportUsersToCsv(userIds);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("text/csv"));
+        headers.setContentDispositionFormData("attachment", "users_export_" + System.currentTimeMillis() + ".csv");
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(csvData);
     }
 }

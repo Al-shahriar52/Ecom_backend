@@ -1,6 +1,7 @@
 package ecommerce.service.impl;
 
 import ecommerce.dto.UserDto;
+import ecommerce.dto.admin.user.BulkActionRequestDto;
 import ecommerce.dto.admin.user.BulkImportResponseDto;
 import ecommerce.dto.admin.user.UserDetailsResponseDto;
 import ecommerce.dto.admin.user.UserRequestDto;
@@ -386,5 +387,104 @@ public class AdminUserServiceImpl implements AdminUserService {
         }
 
         userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void executeBulkAction(BulkActionRequestDto request) {
+        List<Long> userIds = request.getUserIds();
+        String action = request.getAction().toLowerCase();
+
+        switch (action) {
+            case "activate":
+                userRepository.findAllById(userIds).forEach(user -> {
+                    user.setStatus(true);
+                    user.setAccountState(AccountState.ACTIVE);
+                    userRepository.save(user);
+                });
+                break;
+
+            case "suspend":
+                userRepository.findAllById(userIds).forEach(user -> {
+                    user.setStatus(false);
+                    user.setAccountState(AccountState.SUSPENDED);
+                    userRepository.save(user);
+                });
+                break;
+
+            case "delete":
+                // Safely anonymize each selected user (preserves financial orders)
+                for (Long id : userIds) {
+                    anonymizeAndDeleteUser(id);
+                }
+                break;
+
+            default:
+                throw new BadRequestException("Invalid bulk action: " + request.getAction());
+        }
+    }
+
+    @Override
+    @Transactional
+    public void resendCredentials(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("User not found with id: " + userId));
+
+        if (user.getStatus()) {
+            throw new BadRequestException("User is already active. Credentials resend is only allowed for unverified users.");
+        }
+
+        // Generate a new clean temporary password
+        String rawTempPassword = generateTemporaryPassword().trim();
+        user.setPassword(passwordEncoder.encode(rawTempPassword));
+        userRepository.save(user);
+
+        // 1. Dispatch Email
+        if (user.getEmail() != null && !user.getEmail().isBlank()) {
+            emailService.sendTemporaryPassword(user.getEmail(), user.getName(), rawTempPassword);
+        }
+
+        // 2. Dispatch BTRC-Compliant BDBulkSMS (Strict 1-SMS count)
+        if (user.getPhone() != null && !user.getPhone().isBlank()) {
+            smsService.sendTemporaryPasswordSms(user.getPhone(), user.getName(), rawTempPassword);
+        }
+
+        activityService.logActivity(user.getId(), "Credentials resent by Admin");
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportUsersToCsv(List<Long> userIds) {
+        List<User> users;
+
+        // If specific IDs are selected, fetch those; otherwise, fetch all users
+        if (userIds != null && !userIds.isEmpty()) {
+            users = userRepository.findAllById(userIds);
+        } else {
+            users = userRepository.findAll();
+        }
+
+        StringBuilder csvBuilder = new StringBuilder();
+        // CSV Header line
+        csvBuilder.append("ID,Name,Email,Phone,Gender,Role,Account State,Status,Created At\n");
+
+        for (User u : users) {
+            String role = (u.getRoles() != null && !u.getRoles().isEmpty()) ? u.getRoles().iterator().next().name() : "USER";
+            String createdAt = u.getCreatedAt() != null ? u.getCreatedAt().toString() : "";
+
+            csvBuilder.append(String.format("\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
+                    u.getId(),
+                    u.getName() != null ? u.getName().replace("\"", "\"\"") : "",
+                    u.getEmail() != null ? u.getEmail() : "",
+                    u.getPhone() != null ? u.getPhone() : "",
+                    u.getGender() != null ? u.getGender().name() : "",
+                    role,
+                    u.getAccountState() != null ? u.getAccountState().name() : "",
+                    u.getStatus() != null && u.getStatus() ? "Active" : "Inactive",
+                    createdAt
+            ));
+        }
+
+        return csvBuilder.toString().getBytes(StandardCharsets.UTF_8);
     }
 }
