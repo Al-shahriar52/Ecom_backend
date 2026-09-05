@@ -22,29 +22,29 @@ public class SmsService {
     private final RestTemplate restTemplate = new RestTemplate();
 
     /**
-     * Sends OTP via SMS in Bangla Font
+     * OTP SMS (~50 characters -> Strictly 1 SMS count / 70 max limit)
      */
     @Async
     public void sendOtpSms(String toPhoneNumber, String otp) {
-        String messageText = "বিউটিহাট-এ আপনার ভেরিফিকেশন কোড: " + otp + "। কোডটি ৫ মিনিটের জন্য কার্যকর থাকবে।";
+        String messageText = "[বিউটিহাট] আপনার OTP: " + otp + "। মেয়াদ ৫ মিনিট।";
         sendSms(toPhoneNumber, messageText);
     }
 
     /**
-     * Sends temporary password created by admin via SMS in Bangla Font
+     * Temporary Password SMS (~65 characters -> Strictly 1 SMS count / 70 max limit)
      */
     @Async
     public void sendTemporaryPasswordSms(String toPhoneNumber, String name, String tempPassword) {
-        String messageText = "প্রিয় " + name + ", বিউটিহাট-এ আপনার অ্যাকাউন্ট তৈরি করা হয়েছে। টেম্পোরারি পাসওয়ার্ড: " + tempPassword + " । অনুগ্রহ করে লগইন করে পাসওয়ার্ড পরিবর্তন করুন।";
+        String messageText = "[বিউটিহাট] আপনার পাসওয়ার্ড: " + tempPassword + "। অনুগ্রহ করে লগইন করে পরিবর্তন করুন।";
         sendSms(toPhoneNumber, messageText);
     }
 
     /**
-     * Sends order confirmation details via SMS in Bangla Font
+     * Order Confirmation SMS (~60 characters -> Strictly 1 SMS count / 70 max limit)
      */
     @Async
     public void sendOrderConfirmationSms(String toPhoneNumber, String orderId, double totalAmount) {
-        String messageText = String.format("বিউটিহাট-এ আপনার অর্ডার #%s সফলভাবে নিশ্চিত করা হয়েছে! মোট টাকা: ৳%.2f। আমাদের সাথে থাকার জন্য ধন্যবাদ!", orderId, totalAmount);
+        String messageText = String.format("[বিউটিহাট] অর্ডার #%s কনফার্ম হয়েছে। মোট: ৳%.2f। ধন্যবাদ!", orderId, totalAmount);
         sendSms(toPhoneNumber, messageText);
     }
 
