@@ -82,4 +82,26 @@ public class AdminUserController {
                 GenericResponseDto.success("User details retrieved successfully", userDetails, HttpStatus.OK.value())
         );
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<GenericResponseDto<String>> deleteUser(@PathVariable Long id) {
+        adminUserService.anonymizeAndDeleteUser(id);
+
+        return ResponseEntity.ok(
+                GenericResponseDto.success("User deleted successfully", "User PII scrubbed and account deactivated", HttpStatus.OK.value())
+        );
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<GenericResponseDto<String>> updateUserStatus(
+            @PathVariable Long id,
+            @RequestParam boolean suspend) {
+
+        adminUserService.toggleUserSuspension(id, suspend);
+
+        String message = suspend ? "User account suspended" : "User account reactivated";
+        return ResponseEntity.ok(
+                GenericResponseDto.success(message, message, HttpStatus.OK.value())
+        );
+    }
 }

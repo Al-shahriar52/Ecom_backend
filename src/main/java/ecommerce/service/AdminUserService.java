@@ -12,4 +12,6 @@ public interface AdminUserService {
     UserDto updateUser(Long id, UserRequestDto request);
     BulkImportResponseDto importUsersFromCsv(MultipartFile file);
     UserDetailsResponseDto getUserDetails(Long id);
+    void anonymizeAndDeleteUser(Long id);
+    void toggleUserSuspension(Long id, boolean suspend);
 }

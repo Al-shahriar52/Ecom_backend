@@ -7,10 +7,7 @@ import ecommerce.dto.admin.user.UserRequestDto;
 import ecommerce.entity.*;
 import ecommerce.enums.OrderStatus;
 import ecommerce.exceptionHandling.BadRequestException;
-import ecommerce.repository.ActivityRepository;
-import ecommerce.repository.AddressRepository;
-import ecommerce.repository.OrderRepository;
-import ecommerce.repository.UserRepository;
+import ecommerce.repository.*;
 import ecommerce.service.ActivityService;
 import ecommerce.service.AdminUserService;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +35,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     private final OrderRepository orderRepository;
     private final ActivityRepository activityRepository;
     private final ActivityService activityService;
+    private final CartRepository cartRepository;
 
     private static final String TEMP_PWD_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -321,5 +319,46 @@ public class AdminUserServiceImpl implements AdminUserService {
         response.setActivity(activityDtos);
 
         return response;
+    }
+
+    @Override
+    @Transactional
+    public void anonymizeAndDeleteUser(Long id) {
+        // 1. Fetch user
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("User not found with id: " + id));
+
+        // 3. Anonymize Personally Identifiable Information (PII)
+        user.setName("Deleted User");
+        user.setEmail("deleted_user_" + id + "@deleted.local");
+        user.setPhone(null);
+        user.setPassword("DELETED_ACCOUNT_" + System.currentTimeMillis());
+        user.setDob(null);
+        user.setGender(null);
+        user.setOtp(null);
+        user.setOtpExpiry(null);
+
+        // 4. Update status and account state
+        user.setStatus(false);
+        user.setAccountState(AccountState.SUSPENDED);
+
+        // 5. Persist the anonymized entity
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void toggleUserSuspension(Long id, boolean suspend) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("User not found with id: " + id));
+
+        if (suspend) {
+            user.setStatus(false); // Disables login check in Spring Security
+            user.setAccountState(AccountState.SUSPENDED);
+        } else {
+            user.setStatus(true); // Restores active access
+            user.setAccountState(AccountState.ACTIVE);
+        }
+
+        userRepository.save(user);
     }
 }
