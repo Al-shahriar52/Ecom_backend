@@ -25,6 +25,7 @@ public class UserDetailsResponseDto {
     @Data
     public static class OrderStatsDto {
         private double totalSpent;
+        private int confirmed;
         private int delivered;
         private int pending;
         private int cancelled;

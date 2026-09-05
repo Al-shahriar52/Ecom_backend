@@ -258,6 +258,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         List<UserDetailsResponseDto.OrderHistoryDto> historyList = new ArrayList<>();
 
         double totalSpent = 0.0;
+        int confirmed = 0; // Added confirmed counter
         int delivered = 0;
         int pending = 0;
         int cancelled = 0;
@@ -266,6 +267,8 @@ public class AdminUserServiceImpl implements AdminUserService {
             if (order.getOrderStatus() == OrderStatus.DELIVERED) {
                 delivered++;
                 totalSpent += (order.getTotalAmount() != null ? order.getTotalAmount() : 0.0);
+            } else if (order.getOrderStatus() == OrderStatus.CONFIRMED) {
+                confirmed++;
             } else if (order.getOrderStatus() == OrderStatus.PENDING) {
                 pending++;
             } else if (order.getOrderStatus() == OrderStatus.CANCELLED) {
@@ -283,6 +286,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         }
 
         stats.setTotalSpent(totalSpent);
+        stats.setConfirmed(confirmed); // Set the confirmed count here
         stats.setDelivered(delivered);
         stats.setPending(pending);
         stats.setCancelled(cancelled);
