@@ -46,4 +46,6 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
     int updateOrderStatusesByIds(@Param("orderIds") List<Long> orderIds, @Param("status") ecommerce.enums.OrderStatus status);
 
     List<Order> findByUserId(Long userId);
+
+    long countByUser(User user);
 }
