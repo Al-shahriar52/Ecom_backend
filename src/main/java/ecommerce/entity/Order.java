@@ -73,4 +73,8 @@ public class Order {
     private Delivery delivery;
 
     private Long guestUserId;
+
+    private String couponCode;
+
+    private Double discountAmount;
 }
