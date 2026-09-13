@@ -172,7 +172,7 @@ public class OrderServiceImpl implements OrderService {
         if (request.getCouponCode() != null && !request.getCouponCode().trim().isEmpty()) {
 
             // Call your existing method
-            CouponValidateResponseDto couponRes = couponService.dryRunCoupon(request.getCouponCode(), servletRequest);
+            CouponValidateResponseDto couponRes = couponService.dryRunCoupon(request.getCouponCode(), request.getEmail(), servletRequest);
 
             if (!couponRes.isValid()) {
                 throw new RuntimeException("Coupon error: " + couponRes.getMessage());

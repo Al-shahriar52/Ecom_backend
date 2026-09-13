@@ -8,4 +8,5 @@ public class CouponValidateRequestDto {
     private Double cartTotal;
     private String city;
     private String paymentMethod;
+    private String userEmail;
 }

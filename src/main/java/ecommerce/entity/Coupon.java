@@ -1,5 +1,8 @@
 package ecommerce.entity;
 
+import ecommerce.dto.admin.coupon.CouponChartDataDto;
+import ecommerce.dto.admin.coupon.CouponRedemptionDto;
+import ecommerce.dto.admin.coupon.CouponRejectionStatDto;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -55,6 +58,9 @@ public class Coupon {
     private String targetEmail;
     private String targetPhone;
     private String targetRole;
+    private Integer usageCount = 0;
+    private Double discountGiven = 0.0;
+    private Double revenueInfluenced = 0.0;
 
     @Column(name = "status", nullable = false)
     private String status; // live, sched, paused, draft, expired
@@ -128,6 +134,21 @@ public class Coupon {
 
     @Transient
     private List<String> targetAreaNames;
+
+    @Transient
+    private List<CouponRedemptionDto> redemptionHistory;
+
+    @Transient
+    private List<CouponChartDataDto> chartData;
+
+    @Transient
+    private List<CouponChartDataDto> dailyChartData;
+
+    @Transient
+    private List<CouponChartDataDto> weeklyChartData;
+
+    @Transient
+    private List<CouponRejectionStatDto> rejectionReasons;
 
     public enum DiscountType {
         PERCENT, FIXED, DELIVERY, PRICE

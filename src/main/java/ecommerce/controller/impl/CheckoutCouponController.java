@@ -25,8 +25,11 @@ public class CheckoutCouponController {
     }
 
     @PostMapping("/dry-run")
-    public ResponseEntity<CouponValidateResponseDto> dryRunCoupon(@RequestParam String code, HttpServletRequest request) {
-        CouponValidateResponseDto response = couponService.dryRunCoupon(code, request);
+    public ResponseEntity<CouponValidateResponseDto> dryRunCoupon(
+            @RequestParam String code,
+            @RequestParam(required = false) String email,
+            HttpServletRequest request) {
+        CouponValidateResponseDto response = couponService.dryRunCoupon(code, email, request);
         return ResponseEntity.ok(response);
     }
 

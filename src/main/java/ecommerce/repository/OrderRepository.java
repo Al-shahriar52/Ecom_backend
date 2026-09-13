@@ -48,4 +48,6 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
     List<Order> findByUserId(Long userId);
 
     long countByUser(User user);
+
+    List<Order> findByCouponCode(String couponCode);
 }
