@@ -34,7 +34,8 @@ public class RoleMatrixService {
                 "Manage settings",    // Index 7
                 "Manage Coupons",     // Index 8
                 "Manage Accounting",  // Index 9
-                "Manage FBT"          // Index 10
+                "Manage FBT",          // Index 10
+                "Manage products"     // Index 11
         );
         dto.setPermissions(permissions);
 
@@ -49,11 +50,11 @@ public class RoleMatrixService {
 
         // Seed default permission arrays (11 items each) for ALL roles
         Map<String, List<Integer>> matrix = new HashMap<>();
-        matrix.put("admin", Arrays.asList(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1));
-        matrix.put("manager", Arrays.asList(1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0));
-        matrix.put("user", Arrays.asList(1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0));
-        matrix.put("guest", Arrays.asList(1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
-        matrix.put("staff", Arrays.asList(1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0));
+        matrix.put("admin", Arrays.asList(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1));
+        matrix.put("manager", Arrays.asList(1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1));
+        matrix.put("user", Arrays.asList(1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0));
+        matrix.put("guest", Arrays.asList(1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+        matrix.put("staff", Arrays.asList(1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1));
         dto.setMatrix(matrix);
 
         return dto;
@@ -107,7 +108,7 @@ public class RoleMatrixService {
         List<String> currentPermissions = Arrays.asList(
                 "View dashboard", "Manage users", "Create users", "Edit permissions",
                 "View orders", "Refund orders", "Export data", "Manage settings",
-                "Manage Coupons", "Manage Accounting", "Manage FBT"
+                "Manage Coupons", "Manage Accounting", "Manage FBT", "Manage products"
         );
         dto.setPermissions(currentPermissions);
         int targetSize = currentPermissions.size();
@@ -141,10 +142,10 @@ public class RoleMatrixService {
 
             // Ensure all base roles have an entry in the matrix
             normalizedMatrix.putIfAbsent("admin", new ArrayList<>(Collections.nCopies(targetSize, 1)));
-            normalizedMatrix.putIfAbsent("manager", new ArrayList<>(Arrays.asList(1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0)));
-            normalizedMatrix.putIfAbsent("user", new ArrayList<>(Arrays.asList(1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0)));
-            normalizedMatrix.putIfAbsent("guest", new ArrayList<>(Arrays.asList(1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)));
-            normalizedMatrix.putIfAbsent("staff", new ArrayList<>(Arrays.asList(1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0)));
+            normalizedMatrix.putIfAbsent("manager", new ArrayList<>(Arrays.asList(1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1)));
+            normalizedMatrix.putIfAbsent("user", new ArrayList<>(Arrays.asList(1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0)));
+            normalizedMatrix.putIfAbsent("guest", new ArrayList<>(Arrays.asList(1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)));
+            normalizedMatrix.putIfAbsent("staff", new ArrayList<>(Arrays.asList(1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1)));
 
             dto.setMatrix(normalizedMatrix);
         }
