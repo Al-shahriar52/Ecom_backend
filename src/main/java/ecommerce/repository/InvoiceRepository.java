@@ -1,6 +1,7 @@
 package ecommerce.repository;
 
 import ecommerce.entity.Invoice;
+import ecommerce.entity.Order;
 import ecommerce.enums.InvoiceStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -8,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
@@ -19,4 +21,6 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     int updateInvoiceStatuses(@Param("invoices") List<String> invoices, @Param("status") InvoiceStatus status);
 
     List<Invoice> findByOrder_IdIn(List<Long> orderIds);
+
+    Optional<Invoice> findByOrder(Order order);
 }

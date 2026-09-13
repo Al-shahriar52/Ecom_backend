@@ -337,7 +337,7 @@ public class OrderServiceImpl implements OrderService {
         OrderConfirmationResponse.OrderUserDTO userDto = new OrderConfirmationResponse.OrderUserDTO();
         userDto.setName(order.getName());
         userDto.setEmail(order.getEmail());
-        userDto.setPhone(order.getPhoneNumber()); // Use order phone or user phone
+        userDto.setPhone(order.getPhoneNumber());
         response.setUser(userDto);
 
         // Map Details
@@ -353,11 +353,29 @@ public class OrderServiceImpl implements OrderService {
         response.setTotalAmount(order.getTotalAmount());
         response.setCreatedAt(order.getCreatedAt());
 
+        // --- MAP DETAILED FINANCIAL BREAKDOWN FROM INVOICE ---
+        Invoice invoice = invoiceRepository.findByOrder(order).orElse(null);
+        if (invoice != null) {
+            response.setSubTotalMrp(invoice.getSubTotalMrp());
+            response.setProductSavings(invoice.getProductSavings());
+            response.setDiscountedSubTotal(invoice.getDiscountedSubTotal());
+            response.setCouponCode(invoice.getCouponCode());
+            response.setDiscountAmount(invoice.getCouponDiscountAmount());
+        } else {
+            // Fallback if invoice isn't found
+            response.setSubTotalMrp(order.getTotalAmount() - order.getShippingCost());
+            response.setProductSavings(0.0);
+            response.setDiscountedSubTotal(order.getTotalAmount() - order.getShippingCost());
+            response.setCouponCode(order.getCouponCode());
+            response.setDiscountAmount(order.getDiscountAmount());
+        }
+
         // Map Items
         List<OrderConfirmationResponse.OrderItemResponse> items = order.getOrderItems().stream().map(item -> {
             OrderConfirmationResponse.OrderItemResponse itemDto = new OrderConfirmationResponse.OrderItemResponse();
             itemDto.setProductId(item.getProduct().getId());
             itemDto.setProductName(item.getProduct().getName());
+
             // Handle image safely (check nulls)
             if (item.getProduct().getImageUrls() != null && !item.getProduct().getImageUrls().isEmpty()) {
                 itemDto.setProductImageUrl(item.getProduct().getImageUrls().get(0).getImageUrl());
