@@ -13,14 +13,16 @@ public class CartItemDto {
     private String name;
     private int quantity;
     private double price;
+    private double regularPrice;
     private double itemTotalPrice;
     private String imageUrl;
     private int stockQuantity;
 
-    public CartItemDto(Long productId, String name, double price, String imageUrl) {
+    public CartItemDto(Long productId, String name, double price, double regularPrice, String imageUrl) {
         this.productId = productId;
         this.name = name;
         this.price = price;
+        this.regularPrice = regularPrice;
         this.imageUrl = imageUrl;
     }
 }

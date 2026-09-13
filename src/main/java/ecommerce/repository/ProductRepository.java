@@ -81,10 +81,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             "ORDER BY p.createdAt DESC LIMIT 8")
     List<ProductSearchResponseDto> findByCategoryIdAndIdNotOrderByCreatedAtDesc(Long categoryId, Long excludeProductId);
 
-    @Query("SELECT new ecommerce.dto.cart.CartItemDto(p.id, p.name, p.discountedPrice, MIN(pi.imageUrl)) " +
+    @Query("SELECT new ecommerce.dto.cart.CartItemDto(p.id, p.name, p.discountedPrice, p.originalPrice, MIN(pi.imageUrl)) " +
             "FROM Product p " +
             "LEFT JOIN ProductImage pi ON pi.product.id = p.id " +
             "WHERE p.id IN :ids " +
-            "GROUP BY p.id, p.name, p.discountedPrice")
+            "GROUP BY p.id, p.name, p.discountedPrice, p.originalPrice")
     List<CartItemDto> findProductDetailsByIdIn(@Param("ids") List<Long> ids);
 }
