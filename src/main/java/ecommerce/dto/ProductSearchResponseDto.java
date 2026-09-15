@@ -22,4 +22,5 @@ public class ProductSearchResponseDto {
     private double rating;
     private Long numReviews;
     private String imageUrl;
+    private String slug;
 }

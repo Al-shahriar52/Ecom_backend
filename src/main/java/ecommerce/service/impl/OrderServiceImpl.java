@@ -383,6 +383,7 @@ public class OrderServiceImpl implements OrderService {
             itemDto.setQuantity(item.getQuantity());
             itemDto.setPrice(item.getPrice());
             itemDto.setTotal(item.getPrice() * item.getQuantity());
+            itemDto.setSlug(item.getProduct().getSlug());
             return itemDto;
         }).toList();
 

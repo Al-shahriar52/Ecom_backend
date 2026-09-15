@@ -261,6 +261,34 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public ProductDetailDto getProductDetailBySlug(String slug) {
+
+        ProductDetailDto productDetail = productRepository.getProductDetailBySlug(slug);
+
+        if (productDetail != null) {
+
+            List<ProductImage> imageUrls = productImageRepository.findImageUrlsByProductId(productDetail.getProductId());
+            List<String> urls = imageUrls.stream()
+                    .map(ProductImage::getImageUrl)
+                    .toList();
+            productDetail.setImageUrls(urls);
+
+            List<Variation> variations = variationRepository.findByProductId(productDetail.getProductId());
+            List<VariationDto> variationDtos = variations.stream().map(variation -> {
+                VariationDto dto = new VariationDto();
+                dto.setColor(variation.getColor());
+                dto.setSize(variation.getSize());
+                return dto;
+            }).collect(Collectors.toList());
+            productDetail.setVariations(variationDtos);
+
+            return productDetail;
+        }else {
+            throw new ResourceNotFound("Product", "slug", slug);
+        }
+    }
+
+    @Override
     public List<ProductSearchResponseDto> findSimilarProducts(Long productId) {
         Product product = productRepository.findById(productId).orElseThrow(() ->
                 new ResourceNotFound("Product", "id", productId));

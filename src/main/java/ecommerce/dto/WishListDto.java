@@ -10,4 +10,5 @@ public class WishListDto {
     private String imageUrl;
     private String productName;
     private double price;
+    private String slug;
 }

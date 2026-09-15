@@ -45,5 +45,6 @@ public class OrderConfirmationResponse {
         private int quantity;
         private Double price;
         private Double total;
+        private String slug;
     }
 }
