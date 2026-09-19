@@ -11,7 +11,6 @@ import ecommerce.exceptionHandling.BadRequestException;
 import ecommerce.repository.DeliveryRepository;
 import ecommerce.repository.InvoiceRepository;
 import ecommerce.repository.OrderRepository;
-import ecommerce.service.ActivityService;
 import ecommerce.service.AdminOrderService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -36,11 +35,10 @@ public class AdminOrderServiceImpl implements AdminOrderService {
     private final InvoiceRepository invoiceRepository;
     private final SteadfastService steadfastService;
     private final DeliveryRepository deliveryRepository;
-    private final ActivityService activityService;
 
     @Override
     public Page<AdminOrderListDTO> getAdminOrders(
-            int page, int size, String search, String method, String paymentStatus, 
+            int page, int size, String search, String method, String paymentStatus,
             String orderStatus, String deliveryStatus, LocalDateTime startDate, LocalDateTime endDate) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
@@ -205,7 +203,6 @@ public class AdminOrderServiceImpl implements AdminOrderService {
             JsonNode singleResponseNode = steadfastService.sendSinglePickupRequest(singleOrder, singleInvoice);
             processResponseData(singleResponseNode, validOrdersForPickup, invoiceMap, deliveriesToSave, ordersToUpdate);
 
-            activityService.logActivity(validOrdersForPickup.get(0).getUser().getId(), "Parcel pickup requested for invoice: " + singleInvoice.getInvoiceNumber());
         } else {
 
             // --- BULK ORDERS ---
@@ -230,7 +227,6 @@ public class AdminOrderServiceImpl implements AdminOrderService {
 
                         // Process each one individually
                         processResponseData(fallbackResponse, List.of(order), invoiceMap, deliveriesToSave, ordersToUpdate);
-                        activityService.logActivity(order.getUser().getId(), "Parcel pickup requested for invoice: " + inv.getInvoiceNumber());
                     } catch (Exception ex) {
                         System.err.println("Fallback failed for invoice " + invoiceMap.get(order.getId()).getInvoiceNumber() + ": " + ex.getMessage());
                     }
@@ -323,9 +319,89 @@ public class AdminOrderServiceImpl implements AdminOrderService {
         }
     }
 
+    @Override
+    public ecommerce.dto.admin.AdminOrderDetailDTO getOrderById(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new BadRequestException("Order not found with id: " + orderId));
+        return mapToDetailDTO(order);
+    }
+
+    @Override
+    @Transactional
+    public void updateOrderStatus(Long orderId, ecommerce.dto.admin.UpdateOrderStatusRequest request) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new BadRequestException("Order not found with id: " + orderId));
+
+        if (request.getOrderStatus() != null && !request.getOrderStatus().isBlank()) {
+            try {
+                order.setOrderStatus(ecommerce.enums.OrderStatus.valueOf(request.getOrderStatus()));
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException("Invalid order status: " + request.getOrderStatus());
+            }
+        }
+
+        if (request.getDeliveryStatus() != null && !request.getDeliveryStatus().isBlank()) {
+            if (order.getDelivery() == null) {
+                throw new BadRequestException("This order has no delivery record yet - request a pickup first.");
+            }
+            try {
+                order.getDelivery().setDeliveryStatus(ecommerce.enums.DeliveryStatus.valueOf(request.getDeliveryStatus()));
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException("Invalid delivery status: " + request.getDeliveryStatus());
+            }
+        }
+
+        orderRepository.save(order);
+    }
+
+    private ecommerce.dto.admin.AdminOrderDetailDTO mapToDetailDTO(Order order) {
+        ecommerce.dto.admin.AdminOrderDetailDTO dto = new ecommerce.dto.admin.AdminOrderDetailDTO();
+
+        dto.setId(order.getId());
+        dto.setDate(order.getCreatedAt());
+        dto.setCustomer(order.getName());
+        dto.setPhone(order.getPhoneNumber());
+        dto.setEmail(order.getEmail());
+        dto.setAddress(order.getCity() + ", " + order.getArea() + ", " + order.getShippingAddress());
+        dto.setTotalAmount(order.getTotalAmount());
+        dto.setShippingCost(order.getShippingCost());
+        dto.setOrderNote(order.getOrderNote());
+        dto.setPaymentMethod(order.getPaymentMethod() != null ? order.getPaymentMethod().name() : "-");
+        dto.setPaymentStatus(order.getPaymentStatus() != null ? order.getPaymentStatus().name() : "-");
+        dto.setOrderStatus(order.getOrderStatus() != null ? order.getOrderStatus().name() : "-");
+
+        if (order.getInvoice() != null) {
+            dto.setInvoice(order.getInvoice().getInvoiceNumber());
+        }
+
+        if (order.getDelivery() != null) {
+            dto.setDeliveryStatus(order.getDelivery().getDeliveryStatus() != null ? order.getDelivery().getDeliveryStatus().name() : "-");
+            dto.setCid(order.getDelivery().getConsignmentId());
+            dto.setTrackingCode(order.getDelivery().getTrackingCode());
+        }
+
+        List<ecommerce.dto.admin.AdminOrderItemDTO> items = order.getOrderItems().stream().map(item -> {
+            ecommerce.dto.admin.AdminOrderItemDTO i = new ecommerce.dto.admin.AdminOrderItemDTO();
+            i.setQuantity(item.getQuantity());
+            i.setPrice(item.getPrice());
+            i.setSubtotal(item.getQuantity() * item.getPrice());
+            if (item.getProduct() != null) {
+                i.setProductId(item.getProduct().getId());
+                i.setProductName(item.getProduct().getName());
+                if (item.getProduct().getImageUrls() != null && !item.getProduct().getImageUrls().isEmpty()) {
+                    i.setProductImage(item.getProduct().getImageUrls().get(0).getImageUrl());
+                }
+            }
+            return i;
+        }).collect(java.util.stream.Collectors.toList());
+        dto.setItems(items);
+
+        return dto;
+    }
+
     private AdminOrderListDTO mapToDTO(Order order) {
         AdminOrderListDTO dto = new AdminOrderListDTO();
-        
+
         dto.setDate(order.getCreatedAt());
         dto.setCustomer(order.getName());
         dto.setPhone(order.getPhoneNumber());
