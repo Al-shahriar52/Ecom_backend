@@ -45,6 +45,8 @@ public interface ProductService {
 
     ProductDetailDto getProductDetailById(Long productId);
 
+    ProductDetailDto getProductDetailBySlug(String slug);
+
     List<ProductSearchResponseDto> findSimilarProducts(Long productId);
 
     List<Product> findAll();

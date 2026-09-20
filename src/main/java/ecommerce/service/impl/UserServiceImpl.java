@@ -1,11 +1,14 @@
 package ecommerce.service.impl;
 
 import ecommerce.dto.UserDto;
+import ecommerce.dto.admin.user.UserStatsDto;
 import ecommerce.dto.pageResponse.UserResponse;
+import ecommerce.entity.AccountState;
 import ecommerce.entity.User;
 import ecommerce.exceptionHandling.BadRequestException;
 import ecommerce.exceptionHandling.ResourceNotFound;
 import ecommerce.repository.UserRepository;
+import ecommerce.service.ActivityService;
 import ecommerce.service.UserService;
 import ecommerce.utils.DateTimeUtil;
 import ecommerce.utils.TokenUtil;
@@ -17,9 +20,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.TemporalAdjusters;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -30,15 +39,15 @@ public class UserServiceImpl implements UserService {
     private final DateTimeUtil dateTimeUtil;
     private final ModelMapper mapper;
     private final TokenUtil tokenUtil;
+    private final ActivityService activityService;
 
     public UserDto add(UserDto userDto) {
 
         User user = mapToEntity(userDto);
-
-        String formattedTime = dateTimeUtil.convert();
-        user.setCreatedAt(formattedTime);
+        user.setCreatedAt(LocalDateTime.now());
         User newUser = userRepository.save(user);
 
+        activityService.logActivity(newUser.getId(), "New user created: " + newUser.getName());
         return mapToDto(newUser);
     }
 
@@ -88,6 +97,8 @@ public class UserServiceImpl implements UserService {
         user.setDob(userDto.getDob());
         user.setGender(userDto.getGender());
         User updateInfo = userRepository.save(user);
+
+        activityService.logActivity(updateInfo.getId(), "User updated their profile information.");
         return mapToDto(updateInfo);
     }
 
@@ -114,6 +125,66 @@ public class UserServiceImpl implements UserService {
         response.setLast(listOfUser.isLast());
 
         return response;
+    }
+
+    public Map<String, Object> getAdminUserList(int pageNo, int pageSize, String search, String role, String status, String sortKey, String sortDir) {
+        Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+
+        // Map UI column keys to entity field names
+        String sortField = "id";
+        if ("name".equalsIgnoreCase(sortKey)) sortField = "name";
+        if ("createdAt".equalsIgnoreCase(sortKey)) sortField = "createdAt";
+
+        Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by(direction, sortField));
+        Specification<User> spec = UserSpecification.filterUsers(search, role, status);
+
+        Page<User> userPage = userRepository.findAll(spec, pageable);
+
+        List<UserDto> content = userPage.getContent().stream()
+                .map(this::mapToDto)
+                .toList();
+
+        Map<String, Object> meta = new HashMap<>();
+        meta.put("total", userPage.getTotalElements());
+        meta.put("page", pageNo + 1); // Return 1-indexed page for UI
+        meta.put("totalPages", userPage.getTotalPages());
+
+        Map<String, Object> responseData = new HashMap<>();
+        responseData.put("data", content);
+        responseData.put("meta", meta);
+
+        return responseData;
+    }
+
+    @Override
+    public UserStatsDto getUserStats() {
+        long totalUsers = userRepository.count();
+        long activeUsers = userRepository.countByAccountState(AccountState.ACTIVE);
+        long unverifiedUsers = userRepository.countByAccountState(AccountState.UNVERIFIED);
+        long suspendedUsers = userRepository.countByAccountState(AccountState.SUSPENDED);
+
+        // Calculate users registered since start of current month
+        LocalDateTime firstDayOfMonth = LocalDate.now().with(TemporalAdjusters.firstDayOfMonth()).atStartOfDay();
+        long newThisMonth = userRepository.countByCreatedAtAfter(firstDayOfMonth);
+
+        // Calculate percentages safely to avoid division by zero
+        double activePercentage = totalUsers > 0
+                ? Math.round(((double) activeUsers / totalUsers * 100) * 10.0) / 10.0
+                : 0.0;
+
+        double suspendedPercentage = totalUsers > 0
+                ? Math.round(((double) suspendedUsers / totalUsers * 100) * 10.0) / 10.0
+                : 0.0;
+
+        return UserStatsDto.builder()
+                .totalUsers(totalUsers)
+                .newThisMonth(newThisMonth)
+                .activeUsers(activeUsers)
+                .activePercentage(activePercentage)
+                .unverifiedUsers(unverifiedUsers)
+                .suspendedUsers(suspendedUsers)
+                .suspendedPercentage(suspendedPercentage)
+                .build();
     }
 
     public UserDto mapToDto(User user) {

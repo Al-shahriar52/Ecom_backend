@@ -147,6 +147,13 @@ public class ProductControllerImpl implements ProductController {
         return new ResponseEntity<>(GenericResponseDto.success("Fetch product detail successfully", productDetail, HttpStatus.OK.value()), HttpStatus.OK);
     }
 
+    @GetMapping("/detail/slug/{slug}")
+    @Override
+    public ResponseEntity<?> getProductDetailBySlug(@PathVariable String slug) {
+        ProductDetailDto productDetail = productService.getProductDetailBySlug(slug);
+        return new ResponseEntity<>(GenericResponseDto.success("Fetch product detail successfully", productDetail, HttpStatus.OK.value()), HttpStatus.OK);
+    }
+
     @GetMapping("/similar/{productId}")
     @Override
     public ResponseEntity<?> findSimilarProductById(@PathVariable Long productId) {

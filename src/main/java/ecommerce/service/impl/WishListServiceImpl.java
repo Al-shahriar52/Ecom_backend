@@ -71,6 +71,7 @@ public class WishListServiceImpl implements WishListService {
                     wishListDto.setProductId(itemDto.getProductId());
                     wishListDto.setProductName(itemDto.getName());
                     wishListDto.setImageUrl(itemDto.getImageUrl());
+                    wishListDto.setSlug(itemDto.getSlug());
                     items.add(wishListDto);
                     break;
                 }

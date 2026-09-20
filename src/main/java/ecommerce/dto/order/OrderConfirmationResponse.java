@@ -19,6 +19,12 @@ public class OrderConfirmationResponse {
 
     private Double shippingCost;
     private Double totalAmount;
+
+    private Double subTotalMrp;
+    private Double productSavings;
+    private Double discountedSubTotal;
+    private String couponCode;
+    private Double discountAmount;
     
     private LocalDateTime createdAt;
     
@@ -39,5 +45,6 @@ public class OrderConfirmationResponse {
         private int quantity;
         private Double price;
         private Double total;
+        private String slug;
     }
 }

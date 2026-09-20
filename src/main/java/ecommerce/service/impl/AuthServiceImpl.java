@@ -8,6 +8,7 @@ import ecommerce.exceptionHandling.BadRequestException;
 import ecommerce.exceptionHandling.ForbiddenException;
 import ecommerce.exceptionHandling.UnauthorizedException;
 import ecommerce.repository.UserRepository;
+import ecommerce.service.ActivityService;
 import ecommerce.service.AuthService;
 import ecommerce.utils.ContactValidator;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,6 +39,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final EmailService emailService;
     private final SmsService smsService;
+    private final ActivityService activityService;
 
     @Override
     public RegistrationResponseDto register(RegistrationRequestDto requestDto) {
@@ -83,6 +85,7 @@ public class AuthServiceImpl implements AuthService {
         user.setOtpExpiry(LocalDateTime.now().plusMinutes(5)); // OTP valid for 5 minutes
 
         userRepository.save(user);
+        activityService.logActivity(user.getId(), "User registered and OTP sent");
 
         // TODO: In production, integrate Email Sender or SMS Gateway here.
         // For now, we print it to the console so you can test it!
@@ -142,6 +145,8 @@ public class AuthServiceImpl implements AuthService {
         // D. Add Cookies to Headers
         servletResponse.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
         servletResponse.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+
+        activityService.logActivity(user.getId(), "User logged in successfully");
         return LoginResponse.builder()
                 .name(name)
                 .role(userRole)
@@ -262,6 +267,7 @@ public class AuthServiceImpl implements AuthService {
             smsService.sendOtpSms(emailOrPhone, generatedOtp);
         }
 
+        activityService.logActivity(user.getId(), "Password reset OTP sent");
         return "OTP sent to your email or phone.";
     }
 
@@ -283,6 +289,8 @@ public class AuthServiceImpl implements AuthService {
         user.setOtp(null);
         user.setOtpExpiry(null);
         userRepository.save(user);
+
+        activityService.logActivity(user.getId(), "Password reset successfully");
         return "Password reset successfully. You can now login.";
     }
 

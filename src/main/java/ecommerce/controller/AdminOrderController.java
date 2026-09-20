@@ -24,4 +24,8 @@ public interface AdminOrderController {
     ResponseEntity<?> getOrderStats();
 
     ResponseEntity<?> cancelOrders(@RequestBody CancelOrderRequest request);
+
+    ResponseEntity<?> getOrderById(Long orderId);
+
+    ResponseEntity<?> updateOrderStatus(Long orderId, ecommerce.dto.admin.UpdateOrderStatusRequest request);
 }

@@ -75,18 +75,18 @@ public class EmailService {
             helper.setFrom("notification@beautyhaat.com");
             helper.setSubject("Order Confirmed! Invoice " + invoice.getInvoiceNumber() + " - BeautyHaat");
 
-            // Build itemized rows dynamically
+            // --- 1. Build itemized rows dynamically ---
             StringBuilder itemsTableRows = new StringBuilder();
             for (OrderItem item : order.getOrderItems()) {
                 double lineTotal = item.getPrice() * item.getQuantity();
                 itemsTableRows.append(String.format("""
-                    <tr>
-                        <td style="padding: 12px; border-bottom: 1px solid #edf2f7; color: #2d3748; font-size: 14px;">%s</td>
-                        <td style="padding: 12px; border-bottom: 1px solid #edf2f7; color: #718096; font-size: 14px; text-align: center;">%d</td>
-                        <td style="padding: 12px; border-bottom: 1px solid #edf2f7; color: #718096; font-size: 14px; text-align: right;">৳%.2f</td>
-                        <td style="padding: 12px; border-bottom: 1px solid #edf2f7; color: #2d3748; font-size: 14px; text-align: right; font-weight: 600;">৳%.2f</td>
-                    </tr>
-                    """,
+                <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid #edf2f7; color: #2d3748; font-size: 14px;">%s</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #edf2f7; color: #718096; font-size: 14px; text-align: center;">%d</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #edf2f7; color: #718096; font-size: 14px; text-align: right;">৳%.2f</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #edf2f7; color: #2d3748; font-size: 14px; text-align: right; font-weight: 600;">৳%.2f</td>
+                </tr>
+                """,
                         item.getProduct().getName(),
                         item.getQuantity(),
                         item.getPrice(),
@@ -94,90 +94,130 @@ public class EmailService {
                 ));
             }
 
-            // High-end, professional HTML E-commerce template
+            // --- 2. Build mathematical summary rows dynamically ---
+            StringBuilder summaryRows = new StringBuilder();
+
+            // Product Savings Math
+            if (invoice.getProductSavings() != null && invoice.getProductSavings() > 0) {
+                summaryRows.append(String.format("""
+                <tr>
+                    <td style="text-align: left;">Subtotal (MRP):</td>
+                    <td style="text-align: right; font-weight: 500;">৳%.2f</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left; color: #28a745;">Total Product Savings:</td>
+                    <td style="text-align: right; font-weight: 500; color: #28a745;">-৳%.2f</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left;">Discounted Subtotal:</td>
+                    <td style="text-align: right; font-weight: 500;">৳%.2f</td>
+                </tr>
+                """, invoice.getSubTotalMrp(), invoice.getProductSavings(), invoice.getDiscountedSubTotal()));
+            } else {
+                summaryRows.append(String.format("""
+                <tr>
+                    <td style="text-align: left;">Subtotal:</td>
+                    <td style="text-align: right; font-weight: 500;">৳%.2f</td>
+                </tr>
+                """, invoice.getDiscountedSubTotal()));
+            }
+
+            // Coupon Math
+            if (invoice.getCouponDiscountAmount() != null && invoice.getCouponDiscountAmount() > 0) {
+                String couponName = invoice.getCouponCode() != null ? invoice.getCouponCode() : "Coupon";
+                summaryRows.append(String.format("""
+                <tr>
+                    <td style="text-align: left; color: #28a745;">Discount (%s):</td>
+                    <td style="text-align: right; font-weight: 500; color: #28a745;">-৳%.2f</td>
+                </tr>
+                """, couponName, invoice.getCouponDiscountAmount()));
+            }
+
+            // Delivery & Grand Total
+            summaryRows.append(String.format("""
+                <tr>
+                    <td style="text-align: left;">Delivery:</td>
+                    <td style="text-align: right; font-weight: 500;">৳%.2f</td>
+                </tr>
+                <tr style="font-size: 16px; color: #2d3748; font-weight: 700;">
+                    <td style="text-align: left; padding-top: 10px; border-top: 1px solid #edf2f7;">Total:</td>
+                    <td style="text-align: right; padding-top: 10px; border-top: 1px solid #edf2f7; color: #E91E63;">৳%.2f</td>
+                </tr>
+                """, invoice.getShippingAmount(), invoice.getTotalAmount()));
+
+            // --- 3. High-end, professional HTML template ---
             String htmlContent = """
-                <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; max-width: 650px; margin: 0 auto; padding: 20px; background-color: #f7f9fa;">
+            <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; max-width: 650px; margin: 0 auto; padding: 20px; background-color: #f7f9fa;">
+                
+                <div style="background-color: #ffffff; padding: 30px; border-radius: 12px 12px 0 0; border-top: 6px solid #E91E63; border-bottom: 1px solid #edf2f7; text-align: center;">
+                    <h1 style="color: #E91E63; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 1px;">BeautyHaat</h1>
+                    <p style="color: #4a5568; margin: 5px 0 0 0; font-size: 14px; font-weight: 500;">Thank you for your order!</p>
+                </div>
+
+                <div style="background-color: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
                     
-                    <div style="background-color: #ffffff; padding: 30px; border-radius: 12px 12px 0 0; border-top: 6px solid #E91E63; border-bottom: 1px solid #edf2f7; text-align: center;">
-                        <h1 style="color: #E91E63; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 1px;">BeautyHaat</h1>
-                        <p style="color: #4a5568; margin: 5px 0 0 0; font-size: 14px; font-weight: 500;">Thank you for your order!</p>
+                    <p style="color: #2d3748; font-size: 16px; margin-top: 0;">Hello <strong>%s</strong>,</p>
+                    <p style="color: #4a5568; font-size: 14px; line-height: 1.6;">
+                        Your order has been successfully placed and is being processed. Below you will find your official invoice confirmation details.
+                    </p>
+
+                    <table style="width: 100%%; margin: 25px 0; font-size: 14px; border-collapse: collapse;">
+                        <tr>
+                            <td style="padding: 6px 0; color: #718096;"><strong>Invoice Number:</strong></td>
+                            <td style="padding: 6px 0; color: #2d3748; text-align: right;">%s</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 6px 0; color: #718096;"><strong>Order ID:</strong></td>
+                            <td style="padding: 6px 0; color: #2d3748; text-align: right;">#%d</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 6px 0; color: #718096;"><strong>Payment Method:</strong></td>
+                            <td style="padding: 6px 0; color: #2d3748; text-align: right;">%s</td>
+                        </tr>
+                    </table>
+
+                    <hr style="border: 0; border-top: 1px solid #edf2f7; margin: 20px 0;" />
+
+                    <h3 style="color: #2d3748; font-size: 15px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Shipping Information</h3>
+                    <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; font-size: 14px; color: #4a5568; line-height: 1.5; margin-bottom: 25px;">
+                        <strong>Name:</strong> %s<br/>
+                        <strong>Phone:</strong> %s<br/>
+                        <strong>Address:</strong> %s, %s, %s
                     </div>
 
-                    <div style="background-color: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
-                        
-                        <p style="color: #2d3748; font-size: 16px; margin-top: 0;">Hello <strong>%s</strong>,</p>
-                        <p style="color: #4a5568; font-size: 14px; line-height: 1.6;">
-                            Your order has been successfully placed and is being processed. Below you will find your official invoice confirmation details.
-                        </p>
-
-                        <table style="width: 100%%; margin: 25px 0; font-size: 14px; border-collapse: collapse;">
-                            <tr>
-                                <td style="padding: 6px 0; color: #718096;"><strong>Invoice Number:</strong></td>
-                                <td style="padding: 6px 0; color: #2d3748; text-align: right;">%s</td>
+                    <h3 style="color: #2d3748; font-size: 15px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Order Summary</h3>
+                    <table style="width: 100%%; border-collapse: collapse; margin-bottom: 20px;">
+                        <thead>
+                            <tr style="background-color: #f8f9fa;">
+                                <th style="padding: 12px; color: #4a5568; font-size: 13px; font-weight: 600; text-align: left; border-bottom: 2px solid #edf2f7;">Item</th>
+                                <th style="padding: 12px; color: #4a5568; font-size: 13px; font-weight: 600; text-align: center; border-bottom: 2px solid #edf2f7;">Qty</th>
+                                <th style="padding: 12px; color: #4a5568; font-size: 13px; font-weight: 600; text-align: right; border-bottom: 2px solid #edf2f7;">Price</th>
+                                <th style="padding: 12px; color: #4a5568; font-size: 13px; font-weight: 600; text-align: right; border-bottom: 2px solid #edf2f7;">Total</th>
                             </tr>
-                            <tr>
-                                <td style="padding: 6px 0; color: #718096;"><strong>Order ID:</strong></td>
-                                <td style="padding: 6px 0; color: #2d3748; text-align: right;">#%d</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 6px 0; color: #718096;"><strong>Payment Method:</strong></td>
-                                <td style="padding: 6px 0; color: #2d3748; text-align: right;">%s</td>
-                            </tr>
-                        </table>
+                        </thead>
+                        <tbody>
+                            %s
+                        </tbody>
+                    </table>
 
-                        <hr style="border: 0; border-top: 1px solid #edf2f7; margin: 20px 0;" />
+                    <table style="width: 280px; margin-left: auto; font-size: 14px; color: #4a5568; line-height: 2;">
+                        %s
+                    </table>
 
-                        <h3 style="color: #2d3748; font-size: 15px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Shipping Information</h3>
-                        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; font-size: 14px; color: #4a5568; line-height: 1.5; margin-bottom: 25px;">
-                            <strong>Name:</strong> %s<br/>
-                            <strong>Phone:</strong> %s<br/>
-                            <strong>Address:</strong> %s, %s, %s
-                        </div>
-
-                        <h3 style="color: #2d3748; font-size: 15px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Order Summary</h3>
-                        <table style="width: 100%%; border-collapse: collapse; margin-bottom: 20px;">
-                            <thead>
-                                <tr style="background-color: #f8f9fa;">
-                                    <th style="padding: 12px; color: #4a5568; font-size: 13px; font-weight: 600; text-align: left; border-bottom: 2px solid #edf2f7;">Item</th>
-                                    <th style="padding: 12px; color: #4a5568; font-size: 13px; font-weight: 600; text-align: center; border-bottom: 2px solid #edf2f7;">Qty</th>
-                                    <th style="padding: 12px; color: #4a5568; font-size: 13px; font-weight: 600; text-align: right; border-bottom: 2px solid #edf2f7;">Price</th>
-                                    <th style="padding: 12px; color: #4a5568; font-size: 13px; font-weight: 600; text-align: right; border-bottom: 2px solid #edf2f7;">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                %s
-                            </tbody>
-                        </table>
-
-                        <table style="width: 280px; margin-left: auto; font-size: 14px; color: #4a5568; line-height: 2;">
-                            <tr>
-                                <td style="text-align: left;">Subtotal:</td>
-                                <td style="text-align: right; font-weight: 500;">৳%.2f</td>
-                            </tr>
-                            <tr>
-                                <td style="text-align: left;">Shipping Cost:</td>
-                                <td style="text-align: right; font-weight: 500;">৳%.2f</td>
-                            </tr>
-                            <tr style="font-size: 16px; color: #2d3748; font-weight: 700;">
-                                <td style="text-align: left; padding-top: 10px; border-top: 1px solid #edf2f7;">Grand Total:</td>
-                                <td style="text-align: right; padding-top: 10px; border-top: 1px solid #edf2f7; color: #E91E63;">৳%.2f</td>
-                            </tr>
-                        </table>
-
-                        <div style="text-align: center; margin: 35px 0 15px 0;">
-                            <a href="https://beautyhaat.com/order-success/%d" 
-                               style="display: inline-block; padding: 13px 30px; background-color: #E91E63; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 6px; box-shadow: 0 4px 10px rgba(233,30,99,0.3);">
-                               Track Your Order
-                            </a>
-                        </div>
-                    </div>
-
-                    <div style="text-align: center; margin-top: 25px; color: #a0aec0; font-size: 12px; line-height: 1.5;">
-                        If you have any questions, reply to this email or contact support.<br/>
-                        &copy; 2026 <strong>BeautyHaat</strong>. All rights reserved.
+                    <div style="text-align: center; margin: 35px 0 15px 0;">
+                        <a href="https://beautyhaat.com/order-success/%d" 
+                           style="display: inline-block; padding: 13px 30px; background-color: #E91E63; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 6px; box-shadow: 0 4px 10px rgba(233,30,99,0.3);">
+                            Track Your Order
+                        </a>
                     </div>
                 </div>
-                """.formatted(
+
+                <div style="text-align: center; margin-top: 25px; color: #a0aec0; font-size: 12px; line-height: 1.5;">
+                    If you have any questions, reply to this email or contact support.<br/>
+                    &copy; 2026 <strong>BeautyHaat</strong>. All rights reserved.
+                </div>
+            </div>
+            """.formatted(
                     order.getName(),
                     invoice.getInvoiceNumber(),
                     order.getId(),
@@ -186,9 +226,7 @@ public class EmailService {
                     order.getPhoneNumber(),
                     order.getShippingAddress(), order.getArea(), order.getCity(),
                     itemsTableRows.toString(),
-                    invoice.getSubTotal(),
-                    invoice.getShippingAmount(),
-                    invoice.getTotalAmount(),
+                    summaryRows.toString(), // Injected mathematical summary here
                     order.getId()
             );
 
@@ -252,11 +290,73 @@ public class EmailService {
             ));
         }
 
-        // 2. Format Date beautifully (e.g., June 07, 2026)
+        // 2. Build mathematical summary rows dynamically
+        StringBuilder totalsRows = new StringBuilder();
+
+        if (invoice.getProductSavings() != null && invoice.getProductSavings() > 0) {
+            totalsRows.append(String.format("""
+            <tr>
+                <td class="label">Subtotal (MRP):</td>
+                <td><span class="taka">৳</span> %.2f</td>
+            </tr>
+            <tr>
+                <td class="label" style="color: #28a745;">Total Product Savings:</td>
+                <td style="color: #28a745;"><span class="taka">-৳</span> %.2f</td>
+            </tr>
+            <tr>
+                <td class="label">Discounted Subtotal:</td>
+                <td><span class="taka">৳</span> %.2f</td>
+            </tr>
+            """,
+                    invoice.getSubTotalMrp(),
+                    invoice.getProductSavings(),
+                    invoice.getDiscountedSubTotal()
+            ));
+        } else {
+            totalsRows.append(String.format("""
+            <tr>
+                <td class="label">Subtotal:</td>
+                <td><span class="taka">৳</span> %.2f</td>
+            </tr>
+            """,
+                    invoice.getDiscountedSubTotal() != null ? invoice.getDiscountedSubTotal() : invoice.getSubTotal()
+            ));
+        }
+
+        if (invoice.getCouponDiscountAmount() != null && invoice.getCouponDiscountAmount() > 0) {
+            String couponLabel = invoice.getCouponCode() != null
+                    ? "Discount (" + org.springframework.web.util.HtmlUtils.htmlEscape(invoice.getCouponCode()) + "):"
+                    : "Discount:";
+            totalsRows.append(String.format("""
+            <tr>
+                <td class="label" style="color: #28a745;">%s</td>
+                <td style="color: #28a745;"><span class="taka">-৳</span> %.2f</td>
+            </tr>
+            """,
+                    couponLabel,
+                    invoice.getCouponDiscountAmount()
+            ));
+        }
+
+        totalsRows.append(String.format("""
+        <tr>
+            <td class="label">Delivery:</td>
+            <td><span class="taka">৳</span> %.2f</td>
+        </tr>
+        <tr class="grand-total">
+            <td class="label" style="color: #E91E63;">Total:</td>
+            <td><span class="taka">৳</span> %.2f</td>
+        </tr>
+        """,
+                invoice.getShippingAmount(),
+                invoice.getTotalAmount()
+        ));
+
+        // 3. Format Date beautifully (e.g., June 07, 2026)
         java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy");
         String invoiceDate = invoice.getIssuedAt() != null ? invoice.getIssuedAt().format(formatter) : "N/A";
 
-        // 3. The Professional HTML/CSS Template
+        // 4. The Professional HTML/CSS Template
         String htmlTemplate = String.format("""
         <!DOCTYPE html>
         <html lang="en">
@@ -292,7 +392,7 @@ public class EmailService {
                 .items-table td.center { text-align: center; white-space: nowrap; }
                 .items-table td.right { text-align: right; white-space: nowrap; }
                 
-                .totals-table { width: 300px; margin-left: auto; border-collapse: collapse; }
+                .totals-table { width: 320px; margin-left: auto; border-collapse: collapse; }
                 .totals-table td { padding: 8px 10px; font-size: 11pt; text-align: right; white-space: nowrap; }
                 .totals-table td.label { text-align: left; color: #666; }
                 .grand-total { font-weight: bold; color: #E91E63; font-size: 14pt; background-color: #fdf2f6; }
@@ -361,18 +461,7 @@ public class EmailService {
             </table>
 
             <table class="totals-table">
-                <tr>
-                    <td class="label">Subtotal:</td>
-                    <td><span class="taka">৳</span> %.2f</td>
-                </tr>
-                <tr>
-                    <td class="label">Shipping:</td>
-                    <td><span class="taka">৳</span> %.2f</td>
-                </tr>
-                <tr class="grand-total">
-                    <td class="label" style="color: #E91E63;">Total:</td>
-                    <td><span class="taka">৳</span> %.2f</td>
-                </tr>
+                %s
             </table>
 
             <div class="footer">
@@ -383,7 +472,7 @@ public class EmailService {
         </body>
         </html>
         """,
-                // 4. Inject variables into the HTML in the exact order they appear above
+                // 5. Inject variables into the HTML in the exact order they appear above
                 invoice.getInvoiceNumber() != null ? org.springframework.web.util.HtmlUtils.htmlEscape(invoice.getInvoiceNumber()) : "",
                 invoiceDate,
 
@@ -404,13 +493,11 @@ public class EmailService {
                 // Item Rows String
                 itemsTableRows.toString(),
 
-                // Totals
-                invoice.getSubTotal(),
-                invoice.getShippingAmount(),
-                invoice.getTotalAmount()
+                // Dynamic Totals Rows String
+                totalsRows.toString()
         );
 
-        // 5. Generate PDF
+        // 6. Generate PDF
         try (java.io.ByteArrayOutputStream os = new java.io.ByteArrayOutputStream()) {
             com.openhtmltopdf.pdfboxout.PdfRendererBuilder builder = new com.openhtmltopdf.pdfboxout.PdfRendererBuilder();
             builder.useFastMode();
@@ -430,6 +517,50 @@ public class EmailService {
             return os.toByteArray();
         } catch (Exception e) {
             throw new RuntimeException("Error generating PDF", e);
+        }
+    }
+
+    @Async
+    public void sendTemporaryPassword(String toEmail, String name, String tempPassword) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setTo(toEmail);
+            helper.setFrom("notification@beautyhaat.com");
+            helper.setSubject("Welcome to BeautyHaat - Your Temporary Password");
+
+            String htmlContent = """
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #E91E63; margin: 0;">BeautyHaat</h1>
+                </div>
+                <div style="background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                    <h2 style="color: #2c3e50; text-align: center; margin-top: 0;">Welcome Aboard!</h2>
+                    <p style="color: #2d3748; font-size: 16px;">Hello <strong>%s</strong>,</p>
+                    <p style="color: #6c757d; font-size: 15px; line-height: 1.5;">
+                        An account has been created for you by the administrator. Please use the temporary password below to log in:
+                    </p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <span style="display: inline-block; padding: 15px 30px; background-color: #f8f9fa; border: 2px dashed #E91E63; border-radius: 8px; font-size: 24px; font-weight: bold; color: #2c3e50; letter-spacing: 2px;">
+                            %s
+                        </span>
+                    </div>
+                    <p style="color: #e53e3e; font-size: 14px; text-align: center; font-weight: 500;">
+                        Please log in and update your password immediately for security reasons.
+                    </p>
+                </div>
+                <div style="text-align: center; margin-top: 20px; color: #a0aec0; font-size: 12px;">
+                    &copy; 2026 BeautyHaat. All rights reserved.
+                </div>
+            </div>
+            """.formatted(name, tempPassword);
+
+            helper.setText(htmlContent, true);
+            mailSender.send(message);
+
+        } catch (MessagingException e) {
+            System.err.println("Failed to send temporary password email to " + toEmail + ". Error: " + e.getMessage());
         }
     }
 }

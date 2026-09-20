@@ -59,6 +59,7 @@ public class FrequentlyBoughtServiceImpl implements FrequentlyBoughtService {
         dto.setName(product.getName());
         dto.setImageUrl(imageUrlsByProductId.get(0).getImageUrl());
         dto.setDiscountedPrice(product.getDiscountedPrice());
+        dto.setSlug(product.getSlug());
         return dto;
     }
 

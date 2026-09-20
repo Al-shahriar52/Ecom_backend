@@ -6,22 +6,20 @@ import ecommerce.entity.Product;
 import ecommerce.exceptionHandling.ResourceNotFound;
 import ecommerce.repository.OrderItemRepository;
 import ecommerce.repository.ProductRepository;
+import ecommerce.service.ActivityService;
 import ecommerce.service.OrderItemService;
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class OrderItemServiceImpl implements OrderItemService {
 
     private final ModelMapper mapper;
     private final OrderItemRepository orderItemRepository;
     private final ProductRepository productRepository;
-
-    public OrderItemServiceImpl(ModelMapper mapper, OrderItemRepository orderItemRepository, ProductRepository productRepository) {
-        this.mapper = mapper;
-        this.orderItemRepository = orderItemRepository;
-        this.productRepository = productRepository;
-    }
+    private final ActivityService activityService;
 
     @Override
     public OrderItemDto add(OrderItemDto orderItemDto, Long productId) {
@@ -37,6 +35,7 @@ public class OrderItemServiceImpl implements OrderItemService {
         item.setProduct(product);
         orderItemRepository.save(item);
 
+        activityService.logActivity(product.getId(), "Order item added for product: " + product.getName());
         return mapToDto(item);
     }
 
@@ -47,6 +46,7 @@ public class OrderItemServiceImpl implements OrderItemService {
                 new ResourceNotFound("OrderItem", "id", itemId));
 
         orderItemRepository.delete(item);
+        activityService.logActivity(item.getId(), "Order item deleted for product: " + item.getProduct().getName());
         return "Your order item :"+" is deleted successfully.";
     }
 

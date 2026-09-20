@@ -26,11 +26,7 @@ public class GuestCleanupService {
     @Transactional
     public void cleanupStaleGuests() {
         LocalDateTime cutoff = LocalDateTime.now().minusDays(7);
-
-        // Format to match your DB string representation (adjust pattern if needed)
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        String cutoffString = cutoff.format(formatter);
-        List<Long> staleGuestIds = userRepository.findStaleGuestUserIds(cutoffString);
+        List<Long> staleGuestIds = userRepository.findStaleGuestUserIds(cutoff);
 
         if (staleGuestIds.isEmpty()) {
             log.info("Guest cleanup: nothing to delete");

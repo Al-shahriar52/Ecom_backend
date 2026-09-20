@@ -1,0 +1,23 @@
+package ecommerce.service;
+
+import ecommerce.dto.UserDto;
+import ecommerce.dto.admin.user.BulkActionRequestDto;
+import ecommerce.dto.admin.user.BulkImportResponseDto;
+import ecommerce.dto.admin.user.UserDetailsResponseDto;
+import ecommerce.dto.admin.user.UserRequestDto;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+
+public interface AdminUserService {
+
+    UserDto createUser(UserRequestDto request);
+    UserDto updateUser(Long id, UserRequestDto request);
+    BulkImportResponseDto importUsersFromCsv(MultipartFile file);
+    UserDetailsResponseDto getUserDetails(Long id);
+    void anonymizeAndDeleteUser(Long id);
+    void toggleUserSuspension(Long id, boolean suspend);
+    void executeBulkAction(BulkActionRequestDto request);
+    void resendCredentials(Long userId);
+    byte[] exportUsersToCsv(List<Long> userIds);
+}

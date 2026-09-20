@@ -67,7 +67,24 @@ public class AdminOrderControllerImpl implements AdminOrderController {
     @SecurityRequirement(name = "bearerAuth")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> requestSteadfastPickup(@RequestBody PickupRequest request) {
-            adminOrderService.requestParcelPickup(request.getOrderIds());
-            return new ResponseEntity<>(GenericResponseDto.success("Order pickup request successfully", null, HttpStatus.OK.value()), HttpStatus.OK);
+        adminOrderService.requestParcelPickup(request.getOrderIds());
+        return new ResponseEntity<>(GenericResponseDto.success("Order pickup request successfully", null, HttpStatus.OK.value()), HttpStatus.OK);
+    }
+
+    @GetMapping("/{orderId}")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Override
+    public ResponseEntity<?> getOrderById(@PathVariable Long orderId) {
+        return new ResponseEntity<>(GenericResponseDto.success("Order fetched successfully", adminOrderService.getOrderById(orderId), HttpStatus.OK.value()), HttpStatus.OK);
+    }
+
+    @PatchMapping("/{orderId}/status")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Override
+    public ResponseEntity<?> updateOrderStatus(@PathVariable Long orderId, @RequestBody ecommerce.dto.admin.UpdateOrderStatusRequest request) {
+        adminOrderService.updateOrderStatus(orderId, request);
+        return new ResponseEntity<>(GenericResponseDto.success("Order updated successfully", null, HttpStatus.OK.value()), HttpStatus.OK);
     }
 }

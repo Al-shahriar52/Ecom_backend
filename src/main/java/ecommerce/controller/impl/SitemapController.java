@@ -44,7 +44,7 @@ public class SitemapController {
         // 3. Products
         List<Product> allProducts = productService.findAll();
         for (Product product : allProducts) {
-            String productUrl = "https://beautyhaat.com/product/" + product.getId();
+            String productUrl = "https://beautyhaat.com/product/" + product.getSlug();
             xml.append(createSitemapNode(productUrl, today, "0.9"));
         }
 

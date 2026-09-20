@@ -1,7 +1,9 @@
 package ecommerce.service;
 
+import ecommerce.dto.admin.AdminOrderDetailDTO;
 import ecommerce.dto.admin.AdminOrderListDTO;
 import ecommerce.dto.admin.OrderStatsDTO;
+import ecommerce.dto.admin.UpdateOrderStatusRequest;
 import org.springframework.data.domain.Page;
 
 import java.time.LocalDateTime;
@@ -15,4 +17,7 @@ public interface AdminOrderService {
     OrderStatsDTO getOrderStats();
     void cancelOrders(List<String> invoices);
     void requestParcelPickup(List<Long> orderIds);
+
+    AdminOrderDetailDTO getOrderById(Long orderId);
+    void updateOrderStatus(Long orderId, UpdateOrderStatusRequest request);
 }

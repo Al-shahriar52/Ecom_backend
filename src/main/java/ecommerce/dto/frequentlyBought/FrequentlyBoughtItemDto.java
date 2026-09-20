@@ -12,4 +12,5 @@ public class FrequentlyBoughtItemDto {
     private String name;
     private String imageUrl;
     private double discountedPrice;
+    private String slug;
 }

@@ -44,6 +44,8 @@ public class OrderRequest {
     @NotNull
     private List<OrderItemRequest> items;
 
+    private String couponCode;
+
     @Data
     @AllArgsConstructor
     @NoArgsConstructor

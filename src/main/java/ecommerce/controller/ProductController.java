@@ -24,5 +24,6 @@ public interface ProductController {
     ResponseEntity<?> tagList();
     ResponseEntity<?> findNewestArrivals();
     ResponseEntity<?> getProductDetailById(Long productId);
+    ResponseEntity<?> getProductDetailBySlug(String slug);
     ResponseEntity<?> findSimilarProductById(Long productId);
 }

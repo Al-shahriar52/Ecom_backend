@@ -32,6 +32,12 @@ public class Invoice {
     private Double shippingAmount;
     private Double totalAmount; // Grand total
 
+    private Double subTotalMrp = 0.0;
+    private Double productSavings = 0.0;
+    private Double discountedSubTotal = 0.0;
+    private String couponCode;
+    private Double couponDiscountAmount = 0.0;
+
     @Enumerated(EnumType.STRING)
     private InvoiceStatus status = InvoiceStatus.UNPAID;
 

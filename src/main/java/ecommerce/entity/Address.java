@@ -1,9 +1,6 @@
 package ecommerce.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,9 +14,11 @@ public class Address {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String addressType;
+    private AddressType addressType;
     private String city;
     private String area;
     private String address;
     private long userId;
+    @Column(name = "is_default")
+    private boolean isDefault;
 }
