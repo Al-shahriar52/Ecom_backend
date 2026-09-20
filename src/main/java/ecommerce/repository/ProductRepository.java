@@ -18,9 +18,10 @@ import java.util.Optional;
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("SELECT new ecommerce.dto.ProductSearchResponseDto(p.id, p.name, p.description, b.name, c.name, sc.name, " +
-            "t.name, p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, MIN(pi.imageUrl), p.slug) " +
+            "t.name, p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, MIN(pi.imageUrl), p.slug, MIN(v.size)) " +
             "FROM Product p " +
             "LEFT JOIN ProductImage pi on pi.product.id = p.id " +
+            "LEFT JOIN Variation v on v.product.id = p.id " +
             "LEFT JOIN Brand b on b.id=p.brand.id " +
             "LEFT JOIN Category c on c.id=p.category.id " +
             "LEFT JOIN SubCategory sc on sc.id=p.subCategory.id " +
@@ -40,15 +41,16 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Optional<PriceRange> findPriceRangeByBrandId(@Param("brandId") Long brandId);
 
     @Query("SELECT new ecommerce.dto.ProductSearchResponseDto(p.id, p.name, p.description, b.name, c.name, sc.name, " +
-            "t.name, p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, MIN(pi.imageUrl), p.slug) " +
+            "t.name, p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, MIN(pi.imageUrl), p.slug, MIN(v.size) )" +
             "FROM Product p " +
             "LEFT JOIN ProductImage pi on pi.product.id = p.id " +
+            "LEFT JOIN Variation v on v.product.id = p.id " +
             "LEFT JOIN Brand b on b.id=p.brand.id " +
             "LEFT JOIN Category c on c.id=p.category.id " +
             "LEFT JOIN SubCategory sc on sc.id=p.subCategory.id " +
             "LEFT JOIN Tag t on t.id=p.tag.id " +
             "GROUP BY p.id, p.name, p.description, b.name, c.name, sc.name, t.name, " +
-            "p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, p.slug" +
+            "p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, p.slug, v.size " +
             " ORDER BY p.createdAt DESC " +
             "LIMIT 12")
     List<ProductSearchResponseDto> findByOrderByCreatedAtDesc();
@@ -80,16 +82,17 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     ProductDetailDto getProductDetailBySlug(String slug);
 
     @Query("SELECT new ecommerce.dto.ProductSearchResponseDto(p.id, p.name, p.description, b.name, c.name, sc.name, " +
-            "t.name, p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, MIN(pi.imageUrl), p.slug) " +
+            "t.name, p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, MIN(pi.imageUrl), p.slug, MIN(v.size)) " +
             "FROM Product p " +
             "LEFT JOIN ProductImage pi on pi.product.id = p.id " +
             "LEFT JOIN Brand b on b.id=p.brand.id " +
             "LEFT JOIN Category c on c.id=p.category.id " +
             "LEFT JOIN SubCategory sc on sc.id=p.subCategory.id " +
             "LEFT JOIN Tag t on t.id=p.tag.id " +
+            "LEFT JOIN Variation v on v.product.id = p.id " +
             "WHERE p.category.id = :categoryId AND p.id <> :excludeProductId " +
             "GROUP BY p.id, p.name, p.description, b.name, c.name, sc.name, t.name, " +
-            "p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, p.slug " +
+            "p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, p.slug, v.size " +
             "ORDER BY p.createdAt DESC LIMIT 8")
     List<ProductSearchResponseDto> findByCategoryIdAndIdNotOrderByCreatedAtDesc(Long categoryId, Long excludeProductId);
 
