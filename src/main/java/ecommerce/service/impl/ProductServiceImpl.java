@@ -11,6 +11,8 @@ import ecommerce.exceptionHandling.ResourceNotFound;
 import ecommerce.repository.*;
 import ecommerce.service.ProductService;
 import ecommerce.utils.ImageUtil;
+import ecommerce.utils.TokenUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -36,6 +38,9 @@ public class ProductServiceImpl implements ProductService {
     private final BrandRepository brandRepository;
     private final TagRepository tagRepository;
     private final VariationRepository variationRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final WishListRepository wishListRepository;
+    private final TokenUtil tokenUtil;
     private final ImageUtil imageUtil;
 
     @Override
@@ -295,6 +300,62 @@ public class ProductServiceImpl implements ProductService {
 
         Long categoryId = product.getCategory().getId();
         return productRepository.findByCategoryIdAndIdNotOrderByCreatedAtDesc(categoryId, productId);
+    }
+
+    @Override
+    public List<ProductSearchResponseDto> findAlsoViewed(Long productId) {
+        Product product = productRepository.findById(productId).orElseThrow(() ->
+                new ResourceNotFound("Product", "id", productId));
+
+        // "Also viewed" is driven by shared brand - a genuine signal we have
+        // data for, as opposed to fabricating real-time view-tracking data
+        // we don't currently collect.
+        if (product.getBrand() == null) {
+            return List.of();
+        }
+        return productRepository.findAlsoViewedByBrand(product.getBrand().getId(), productId);
+    }
+
+    @Override
+    public List<ProductSearchResponseDto> findRecommendedForUser(HttpServletRequest request) {
+        Set<Long> categoryIds = new HashSet<>();
+        Set<Long> excludeIds = new HashSet<>();
+
+        try {
+            User user = tokenUtil.extractUserInfo(request);
+            categoryIds.addAll(orderItemRepository.findDistinctCategoryIdsByUserId(user.getId()));
+            categoryIds.addAll(wishListRepository.findDistinctCategoryIdsByUserId(user.getId()));
+            excludeIds.addAll(wishListRepository.findProductIdsByUserId(user.getId()));
+        } catch (Exception ignored) {
+            // Guest, or an expired/invalid token - fall back to
+            // general top-rated recommendations below instead of failing.
+        }
+
+        // NOT IN () is invalid JPQL with an empty collection, so always seed
+        // it with a value that can never match a real product id.
+        if (excludeIds.isEmpty()) {
+            excludeIds.add(-1L);
+        }
+
+        List<ProductSearchResponseDto> recommendations = new ArrayList<>();
+        if (!categoryIds.isEmpty()) {
+            recommendations.addAll(productRepository.findRecommendedByCategories(new ArrayList<>(categoryIds), new ArrayList<>(excludeIds)));
+        }
+
+        // Top up with generally top-rated products if personalized results
+        // are thin (new user, guest, or a narrow category history).
+        if (recommendations.size() < 8) {
+            Set<Long> fallbackExclude = new HashSet<>(excludeIds);
+            recommendations.forEach(r -> fallbackExclude.add(r.getProductId()));
+
+            List<ProductSearchResponseDto> fallback = productRepository.findTopRatedExcluding(new ArrayList<>(fallbackExclude));
+            for (ProductSearchResponseDto p : fallback) {
+                if (recommendations.size() >= 8) break;
+                recommendations.add(p);
+            }
+        }
+
+        return recommendations;
     }
 
     @Override

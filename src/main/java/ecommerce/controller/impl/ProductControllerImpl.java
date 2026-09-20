@@ -12,6 +12,7 @@ import ecommerce.entity.Tag;
 import ecommerce.service.ProductService;
 import ecommerce.service.impl.FilterService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -48,8 +49,8 @@ public class ProductControllerImpl implements ProductController {
     @GetMapping("/get/{productId}")
     public ResponseEntity<?> getById(@PathVariable Long productId) {
 
-            ProductDto productDto = productService.getById(productId);
-            return new ResponseEntity<>(productDto, HttpStatus.OK);
+        ProductDto productDto = productService.getById(productId);
+        return new ResponseEntity<>(productDto, HttpStatus.OK);
     }
 
     @Override
@@ -159,5 +160,19 @@ public class ProductControllerImpl implements ProductController {
     public ResponseEntity<?> findSimilarProductById(@PathVariable Long productId) {
         List<ProductSearchResponseDto> products = productService.findSimilarProducts(productId);
         return new ResponseEntity<>(GenericResponseDto.success("Fetch newest arrivals successfully", products, HttpStatus.OK.value()), HttpStatus.OK);
+    }
+
+    @GetMapping("/also-viewed/{productId}")
+    @Override
+    public ResponseEntity<?> findAlsoViewed(@PathVariable Long productId) {
+        List<ProductSearchResponseDto> products = productService.findAlsoViewed(productId);
+        return new ResponseEntity<>(GenericResponseDto.success("Fetch also viewed products successfully", products, HttpStatus.OK.value()), HttpStatus.OK);
+    }
+
+    @GetMapping("/recommended")
+    @Override
+    public ResponseEntity<?> findRecommended(HttpServletRequest request) {
+        List<ProductSearchResponseDto> products = productService.findRecommendedForUser(request);
+        return new ResponseEntity<>(GenericResponseDto.success("Fetch recommended products successfully", products, HttpStatus.OK.value()), HttpStatus.OK);
     }
 }
