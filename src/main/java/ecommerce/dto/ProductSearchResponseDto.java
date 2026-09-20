@@ -23,4 +23,5 @@ public class ProductSearchResponseDto {
     private Long numReviews;
     private String imageUrl;
     private String slug;
+    private String size;
 }
