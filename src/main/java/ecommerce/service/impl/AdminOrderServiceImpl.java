@@ -332,6 +332,7 @@ public class AdminOrderServiceImpl implements AdminOrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new BadRequestException("Order not found with id: " + orderId));
 
+        // --- Status ---
         if (request.getOrderStatus() != null && !request.getOrderStatus().isBlank()) {
             try {
                 order.setOrderStatus(ecommerce.enums.OrderStatus.valueOf(request.getOrderStatus()));
@@ -350,6 +351,41 @@ public class AdminOrderServiceImpl implements AdminOrderService {
                 throw new BadRequestException("Invalid delivery status: " + request.getDeliveryStatus());
             }
         }
+
+        // --- Contact ---
+        if (request.getCustomerName() != null) order.setName(request.getCustomerName());
+        if (request.getPhone() != null) order.setPhoneNumber(request.getPhone());
+        if (request.getEmail() != null) order.setEmail(request.getEmail());
+        if (request.getShippingAddress() != null) order.setShippingAddress(request.getShippingAddress());
+        if (request.getCity() != null) order.setCity(request.getCity());
+        if (request.getArea() != null) order.setArea(request.getArea());
+
+        // --- Payment ---
+        if (request.getPaymentMethod() != null && !request.getPaymentMethod().isBlank()) {
+            try {
+                order.setPaymentMethod(ecommerce.enums.PaymentMethod.valueOf(request.getPaymentMethod()));
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException("Invalid payment method: " + request.getPaymentMethod());
+            }
+        }
+        if (request.getPaymentStatus() != null && !request.getPaymentStatus().isBlank()) {
+            try {
+                order.setPaymentStatus(ecommerce.enums.PaymentStatus.valueOf(request.getPaymentStatus()));
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException("Invalid payment status: " + request.getPaymentStatus());
+            }
+        }
+
+        // --- Financials ---
+        if (request.getShippingCost() != null) order.setShippingCost(request.getShippingCost());
+        if (request.getTotalAmount() != null) order.setTotalAmount(request.getTotalAmount());
+
+        // --- Courier (manual correction only - normally system-managed) ---
+        if (request.getCid() != null && order.getDelivery() != null) order.getDelivery().setConsignmentId(request.getCid());
+        if (request.getTrackingCode() != null && order.getDelivery() != null) order.getDelivery().setTrackingCode(request.getTrackingCode());
+
+        // --- Misc ---
+        if (request.getOrderNote() != null) order.setOrderNote(request.getOrderNote());
 
         orderRepository.save(order);
     }
