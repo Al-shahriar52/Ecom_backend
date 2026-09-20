@@ -1,6 +1,7 @@
 package ecommerce.controller;
 
 import ecommerce.dto.ProductDto;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,4 +27,6 @@ public interface ProductController {
     ResponseEntity<?> getProductDetailById(Long productId);
     ResponseEntity<?> getProductDetailBySlug(String slug);
     ResponseEntity<?> findSimilarProductById(Long productId);
+    ResponseEntity<?> findAlsoViewed(Long productId);
+    ResponseEntity<?> findRecommended(HttpServletRequest request);
 }

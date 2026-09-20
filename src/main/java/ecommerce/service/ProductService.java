@@ -6,6 +6,7 @@ import ecommerce.dto.ProductSearchResponseDto;
 import ecommerce.dto.SubCategoryDto;
 import ecommerce.dto.details.ProductDetailDto;
 import ecommerce.dto.pageResponse.ProductResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import ecommerce.entity.Brand;
 import ecommerce.entity.Category;
 import ecommerce.entity.Product;
@@ -48,6 +49,8 @@ public interface ProductService {
     ProductDetailDto getProductDetailBySlug(String slug);
 
     List<ProductSearchResponseDto> findSimilarProducts(Long productId);
+    List<ProductSearchResponseDto> findAlsoViewed(Long productId);
+    List<ProductSearchResponseDto> findRecommendedForUser(HttpServletRequest request);
 
     List<Product> findAll();
 }

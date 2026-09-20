@@ -96,6 +96,51 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             "ORDER BY p.createdAt DESC LIMIT 8")
     List<ProductSearchResponseDto> findByCategoryIdAndIdNotOrderByCreatedAtDesc(Long categoryId, Long excludeProductId);
 
+    @Query("SELECT new ecommerce.dto.ProductSearchResponseDto(p.id, p.name, p.description, b.name, c.name, sc.name, " +
+            "t.name, p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, MIN(pi.imageUrl), p.slug, MIN(v.size)) " +
+            "FROM Product p " +
+            "LEFT JOIN ProductImage pi on pi.product.id = p.id " +
+            "LEFT JOIN Variation v on v.product.id = p.id " +
+            "LEFT JOIN Brand b on b.id=p.brand.id " +
+            "LEFT JOIN Category c on c.id=p.category.id " +
+            "LEFT JOIN SubCategory sc on sc.id=p.subCategory.id " +
+            "LEFT JOIN Tag t on t.id=p.tag.id " +
+            "WHERE p.brand.id = :brandId AND p.id <> :excludeProductId " +
+            "GROUP BY p.id, p.name, p.description, b.name, c.name, sc.name, t.name, " +
+            "p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, p.slug " +
+            "ORDER BY p.rating DESC, p.createdAt DESC LIMIT 8")
+    List<ProductSearchResponseDto> findAlsoViewedByBrand(Long brandId, Long excludeProductId);
+
+    @Query("SELECT new ecommerce.dto.ProductSearchResponseDto(p.id, p.name, p.description, b.name, c.name, sc.name, " +
+            "t.name, p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, MIN(pi.imageUrl), p.slug, MIN(v.size)) " +
+            "FROM Product p " +
+            "LEFT JOIN ProductImage pi on pi.product.id = p.id " +
+            "LEFT JOIN Variation v on v.product.id = p.id " +
+            "LEFT JOIN Brand b on b.id=p.brand.id " +
+            "LEFT JOIN Category c on c.id=p.category.id " +
+            "LEFT JOIN SubCategory sc on sc.id=p.subCategory.id " +
+            "LEFT JOIN Tag t on t.id=p.tag.id " +
+            "WHERE p.category.id IN :categoryIds AND p.id NOT IN :excludeProductIds " +
+            "GROUP BY p.id, p.name, p.description, b.name, c.name, sc.name, t.name, " +
+            "p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, p.slug " +
+            "ORDER BY p.rating DESC, p.numReviews DESC LIMIT 8")
+    List<ProductSearchResponseDto> findRecommendedByCategories(List<Long> categoryIds, List<Long> excludeProductIds);
+
+    @Query("SELECT new ecommerce.dto.ProductSearchResponseDto(p.id, p.name, p.description, b.name, c.name, sc.name, " +
+            "t.name, p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, MIN(pi.imageUrl), p.slug, MIN(v.size)) " +
+            "FROM Product p " +
+            "LEFT JOIN ProductImage pi on pi.product.id = p.id " +
+            "LEFT JOIN Variation v on v.product.id = p.id " +
+            "LEFT JOIN Brand b on b.id=p.brand.id " +
+            "LEFT JOIN Category c on c.id=p.category.id " +
+            "LEFT JOIN SubCategory sc on sc.id=p.subCategory.id " +
+            "LEFT JOIN Tag t on t.id=p.tag.id " +
+            "WHERE p.id NOT IN :excludeProductIds " +
+            "GROUP BY p.id, p.name, p.description, b.name, c.name, sc.name, t.name, " +
+            "p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, p.slug " +
+            "ORDER BY p.rating DESC, p.numReviews DESC LIMIT 8")
+    List<ProductSearchResponseDto> findTopRatedExcluding(List<Long> excludeProductIds);
+
     @Query("SELECT new ecommerce.dto.cart.CartItemDto(p.id, p.name, p.discountedPrice, p.originalPrice, MIN(pi.imageUrl), p.slug) " +
             "FROM Product p " +
             "LEFT JOIN ProductImage pi ON pi.product.id = p.id " +
