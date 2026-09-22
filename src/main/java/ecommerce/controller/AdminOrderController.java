@@ -28,4 +28,15 @@ public interface AdminOrderController {
     ResponseEntity<?> getOrderById(Long orderId);
 
     ResponseEntity<?> updateOrderStatus(Long orderId, ecommerce.dto.admin.UpdateOrderStatusRequest request);
+
+    ResponseEntity<?> getFinanceTransactions(
+            int page,
+            int size,
+            String search,
+            String method,
+            String paymentStatus,
+            String orderStatus,
+            String deliveryStatus,
+            LocalDateTime startDate,
+            LocalDateTime endDate);
 }

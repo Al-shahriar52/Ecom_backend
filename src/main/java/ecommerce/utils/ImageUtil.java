@@ -50,6 +50,16 @@ public class ImageUtil {
         return uploadResult.get("secure_url").toString();
     }
 
+    /**
+     * Uploads a file as-is, without the image-only compression step above.
+     * Used for receipts, which can be PDFs as well as photos.
+     */
+    public String uploadRawFile(MultipartFile file) throws IOException {
+        Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(),
+                ObjectUtils.asMap("resource_type", "auto"));
+        return uploadResult.get("secure_url").toString();
+    }
+
     public List<ProductImage> uploadFiles(List<MultipartFile> files, Product product) throws IOException {
         List<ProductImage> productImages = new ArrayList<>();
         for (MultipartFile file : files) {

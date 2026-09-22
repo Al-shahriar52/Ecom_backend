@@ -20,4 +20,8 @@ public interface AdminOrderService {
 
     AdminOrderDetailDTO getOrderById(Long orderId);
     void updateOrderStatus(Long orderId, UpdateOrderStatusRequest request);
+
+    org.springframework.data.domain.Page<ecommerce.dto.admin.AdminTransactionDto> getFinanceTransactions(
+            int page, int size, String search, String method, String paymentStatus,
+            String orderStatus, String deliveryStatus, LocalDateTime startDate, LocalDateTime endDate);
 }
