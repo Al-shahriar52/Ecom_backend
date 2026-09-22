@@ -87,4 +87,25 @@ public class AdminOrderControllerImpl implements AdminOrderController {
         adminOrderService.updateOrderStatus(orderId, request);
         return new ResponseEntity<>(GenericResponseDto.success("Order updated successfully", null, HttpStatus.OK.value()), HttpStatus.OK);
     }
+
+    @GetMapping("/finance-transactions")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Override
+    public ResponseEntity<?> getFinanceTransactions(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false, defaultValue = "All") String method,
+            @RequestParam(required = false, defaultValue = "All") String paymentStatus,
+            @RequestParam(required = false, defaultValue = "All") String orderStatus,
+            @RequestParam(required = false, defaultValue = "All") String deliveryStatus,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
+
+        Page<ecommerce.dto.admin.AdminTransactionDto> result = adminOrderService.getFinanceTransactions(
+                page, size, search, method, paymentStatus, orderStatus, deliveryStatus, startDate, endDate
+        );
+        return new ResponseEntity<>(GenericResponseDto.success("Transactions fetched successfully", result, HttpStatus.OK.value()), HttpStatus.OK);
+    }
 }

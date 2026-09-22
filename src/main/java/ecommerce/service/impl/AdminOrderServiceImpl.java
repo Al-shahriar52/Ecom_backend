@@ -54,6 +54,75 @@ public class AdminOrderServiceImpl implements AdminOrderService {
     }
 
     @Override
+    public Page<ecommerce.dto.admin.AdminTransactionDto> getFinanceTransactions(
+            int page, int size, String search, String method, String paymentStatus,
+            String orderStatus, String deliveryStatus, LocalDateTime startDate, LocalDateTime endDate) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Specification<Order> spec = OrderSpecification.getFilteredOrders(
+                search, method, paymentStatus, orderStatus, deliveryStatus, startDate, endDate
+        );
+        Page<Order> orderPage = orderRepository.findAll(spec, pageable);
+        return orderPage.map(this::mapToTransactionDto);
+    }
+
+    // NOTE: fee rates are hardcoded here for now - the Payment Gateways
+    // settings screen in the frontend isn't wired to a real config endpoint
+    // yet, so these values need to be kept in sync manually until that
+    // module is built.
+    private static final java.util.Map<String, Double> GATEWAY_FEE_RATES = java.util.Map.of(
+            "BKASH", 1.85, "NAGAD", 1.99, "ROCKET", 1.80, "CARD", 2.75, "COD", 1.20
+    );
+
+    private ecommerce.dto.admin.AdminTransactionDto mapToTransactionDto(Order order) {
+        ecommerce.dto.admin.AdminTransactionDto dto = new ecommerce.dto.admin.AdminTransactionDto();
+        dto.setOrderId(order.getId());
+        dto.setInvoice(order.getInvoice() != null ? order.getInvoice().getInvoiceNumber() : null);
+        dto.setDate(order.getCreatedAt());
+        dto.setCustomer(order.getName());
+        dto.setPhone(order.getPhoneNumber());
+
+        String method = order.getPaymentMethod() != null ? order.getPaymentMethod().name() : "COD";
+        dto.setGateway(method.toLowerCase());
+
+        double gross = order.getTotalAmount() != null ? order.getTotalAmount() : 0;
+        double rate = GATEWAY_FEE_RATES.getOrDefault(method, 0.0);
+        dto.setGross(gross);
+        dto.setFeeRate(rate);
+
+        String status = deriveStatus(order);
+        dto.setStatus(status);
+
+        boolean noValue = "failed".equals(status);
+        double fee = noValue ? 0 : (gross * rate / 100.0);
+        dto.setFee(fee);
+        dto.setNet(noValue ? 0 : gross - fee);
+
+        return dto;
+    }
+
+    private String deriveStatus(Order order) {
+        String paymentStatus = order.getPaymentStatus() != null ? order.getPaymentStatus().name() : "PENDING";
+        String orderStatus = order.getOrderStatus() != null ? order.getOrderStatus().name() : "PENDING";
+        String deliveryStatus = order.getDelivery() != null && order.getDelivery().getDeliveryStatus() != null
+                ? order.getDelivery().getDeliveryStatus().name() : null;
+        boolean isCod = order.getPaymentMethod() == null || "COD".equals(order.getPaymentMethod().name());
+
+        if ("CANCELLED".equals(orderStatus)) return "cancelled";
+        if ("FAILED".equals(paymentStatus)) return "failed";
+        if ("REFUNDED".equals(paymentStatus)) return "refunded";
+
+        if (isCod) {
+            if ("IN_TRANSIT".equals(deliveryStatus)) return "transit";
+            if ("DELIVERED".equals(deliveryStatus) && !"PAID".equals(paymentStatus)) return "delivered";
+            if ("PAID".equals(paymentStatus)) return "settled";
+            return "await";
+        }
+
+        return "PAID".equals(paymentStatus) ? "settled" : "await";
+    }
+
+    @Override
     public OrderStatsDTO getOrderStats() {
         return OrderStatsDTO.builder()
                 .totalOrders(orderRepository.count())
