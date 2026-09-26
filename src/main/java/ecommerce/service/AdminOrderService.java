@@ -1,9 +1,6 @@
 package ecommerce.service;
 
-import ecommerce.dto.admin.AdminOrderDetailDTO;
-import ecommerce.dto.admin.AdminOrderListDTO;
-import ecommerce.dto.admin.OrderStatsDTO;
-import ecommerce.dto.admin.UpdateOrderStatusRequest;
+import ecommerce.dto.admin.*;
 import org.springframework.data.domain.Page;
 
 import java.time.LocalDateTime;
@@ -21,7 +18,7 @@ public interface AdminOrderService {
     AdminOrderDetailDTO getOrderById(Long orderId);
     void updateOrderStatus(Long orderId, UpdateOrderStatusRequest request);
 
-    org.springframework.data.domain.Page<ecommerce.dto.admin.AdminTransactionDto> getFinanceTransactions(
+    Page<AdminTransactionDto> getFinanceTransactions(
             int page, int size, String search, String method, String paymentStatus,
             String orderStatus, String deliveryStatus, LocalDateTime startDate, LocalDateTime endDate);
 }

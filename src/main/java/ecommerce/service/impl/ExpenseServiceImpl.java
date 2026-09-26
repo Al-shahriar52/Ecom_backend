@@ -79,7 +79,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     public Page<ExpenseDto> search(int pageNo, int pageSize, LocalDate start, LocalDate end,
-                                    String category, Boolean hasReceipt, String query) {
+                                   String category, Boolean hasReceipt, String query) {
         ExpenseCategory categoryEnum = null;
         if (category != null && !category.isBlank()) {
             try {
@@ -134,6 +134,12 @@ public class ExpenseServiceImpl implements ExpenseService {
             result.put(label, total);
         }
         return result;
+    }
+
+    @Override
+    public List<ExpenseDto> recentRecurring() {
+        return expenseRepository.findTop3ByRecurringTrueOrderByExpenseDateDesc()
+                .stream().map(this::toDto).collect(java.util.stream.Collectors.toList());
     }
 
     private ExpenseDto toDto(Expense e) {

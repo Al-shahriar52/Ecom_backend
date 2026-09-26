@@ -20,11 +20,11 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             "(:query IS NULL OR LOWER(e.vendor) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(e.reference) LIKE LOWER(CONCAT('%', :query, '%'))) " +
             "ORDER BY e.expenseDate DESC, e.id DESC")
     Page<Expense> search(Pageable pageable,
-                          @Param("start") LocalDate start,
-                          @Param("end") LocalDate end,
-                          @Param("category") ExpenseCategory category,
-                          @Param("hasReceipt") Boolean hasReceipt,
-                          @Param("query") String query);
+                         @Param("start") LocalDate start,
+                         @Param("end") LocalDate end,
+                         @Param("category") ExpenseCategory category,
+                         @Param("hasReceipt") Boolean hasReceipt,
+                         @Param("query") String query);
 
     @Query("SELECT new ecommerce.dto.admin.ExpenseCategoryTotalDto(CAST(e.category AS string), SUM(e.amount), COUNT(e)) " +
             "FROM Expense e WHERE e.expenseDate >= :start AND e.expenseDate <= :end " +
@@ -42,4 +42,6 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
     @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.category = :category AND e.expenseDate >= :start AND e.expenseDate <= :end")
     double sumForCategoryAndRange(@Param("category") ExpenseCategory category, @Param("start") LocalDate start, @Param("end") LocalDate end);
+
+    List<Expense> findTop3ByRecurringTrueOrderByExpenseDateDesc();
 }

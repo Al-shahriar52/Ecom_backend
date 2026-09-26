@@ -50,4 +50,36 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
     long countByUser(User user);
 
     List<Order> findByCouponCode(String couponCode);
+
+    // ============ FINANCE DASHBOARD ============
+
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.createdAt >= :start AND o.createdAt < :end AND o.orderStatus <> 'CANCELLED'")
+    double sumGrossSales(@Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
+
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.createdAt >= :start AND o.createdAt < :end AND o.paymentStatus = 'REFUNDED'")
+    double sumRefunds(@Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt >= :start AND o.createdAt < :end AND o.paymentStatus = 'PAID'")
+    long countPaidOrders(@Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
+
+    @Query("SELECT o.paymentMethod, COALESCE(SUM(o.totalAmount), 0), COUNT(o) FROM Order o " +
+            "WHERE o.createdAt >= :start AND o.createdAt < :end AND o.orderStatus <> 'CANCELLED' GROUP BY o.paymentMethod")
+    List<Object[]> gatewayMix(@Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
+
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.paidAt >= :start AND o.paidAt < :end AND o.paymentStatus = 'PAID'")
+    double sumCollected(@Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
+
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.paymentStatus = 'PENDING' AND o.paymentMethod <> 'COD' AND o.orderStatus <> 'CANCELLED'")
+    double sumAwaitingSettlement();
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.paymentStatus = 'PENDING' AND o.paymentMethod <> 'COD' AND o.orderStatus <> 'CANCELLED'")
+    long countAwaitingSettlement();
+
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o JOIN o.delivery d " +
+            "WHERE o.paymentMethod = 'COD' AND d.deliveryStatus IN ('READY_FOR_PICKUP', 'IN_TRANSIT')")
+    double sumCodPending();
+
+    @Query("SELECT COUNT(o) FROM Order o JOIN o.delivery d " +
+            "WHERE o.paymentMethod = 'COD' AND d.deliveryStatus IN ('READY_FOR_PICKUP', 'IN_TRANSIT')")
+    long countCodPending();
 }

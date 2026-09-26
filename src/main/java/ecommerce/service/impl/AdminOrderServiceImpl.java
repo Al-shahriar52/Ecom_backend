@@ -66,13 +66,9 @@ public class AdminOrderServiceImpl implements AdminOrderService {
         return orderPage.map(this::mapToTransactionDto);
     }
 
-    // NOTE: fee rates are hardcoded here for now - the Payment Gateways
-    // settings screen in the frontend isn't wired to a real config endpoint
-    // yet, so these values need to be kept in sync manually until that
-    // module is built.
-    private static final java.util.Map<String, Double> GATEWAY_FEE_RATES = java.util.Map.of(
-            "BKASH", 1.85, "NAGAD", 1.99, "ROCKET", 1.80, "CARD", 2.75, "COD", 1.20
-    );
+    private double gatewayFeeRate(String method) {
+        return ecommerce.utils.GatewayFeeRates.rateFor(method);
+    }
 
     private ecommerce.dto.admin.AdminTransactionDto mapToTransactionDto(Order order) {
         ecommerce.dto.admin.AdminTransactionDto dto = new ecommerce.dto.admin.AdminTransactionDto();
@@ -86,7 +82,7 @@ public class AdminOrderServiceImpl implements AdminOrderService {
         dto.setGateway(method.toLowerCase());
 
         double gross = order.getTotalAmount() != null ? order.getTotalAmount() : 0;
-        double rate = GATEWAY_FEE_RATES.getOrDefault(method, 0.0);
+        double rate = gatewayFeeRate(method);
         dto.setGross(gross);
         dto.setFeeRate(rate);
 
