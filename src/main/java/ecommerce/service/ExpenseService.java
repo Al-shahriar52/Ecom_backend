@@ -16,7 +16,7 @@ public interface ExpenseService {
     ExpenseDto create(CreateExpenseRequest request, MultipartFile receipt, jakarta.servlet.http.HttpServletRequest servletRequest) throws IOException;
 
     Page<ExpenseDto> search(int pageNo, int pageSize, LocalDate start, LocalDate end,
-                             String category, Boolean hasReceipt, String query);
+                            String category, Boolean hasReceipt, String query);
 
     List<ExpenseCategoryTotalDto> categoryTotals(LocalDate start, LocalDate end);
 
@@ -26,4 +26,6 @@ public interface ExpenseService {
 
     /** Monthly totals for one category, oldest to newest - e.g. for the "last 6 months" chart. */
     Map<String, Double> monthlyTrend(String category, int months);
+
+    List<ExpenseDto> recentRecurring();
 }
