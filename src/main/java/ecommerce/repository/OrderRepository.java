@@ -82,4 +82,30 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
     @Query("SELECT COUNT(o) FROM Order o JOIN o.delivery d " +
             "WHERE o.paymentMethod = 'COD' AND d.deliveryStatus IN ('READY_FOR_PICKUP', 'IN_TRANSIT')")
     long countCodPending();
+
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o JOIN o.delivery d " +
+            "WHERE o.paymentMethod = 'COD' AND d.deliveryStatus = 'DELIVERED' AND o.paymentStatus <> 'PAID'")
+    double sumCodDeliveredUnpaid();
+
+    @Query("SELECT COUNT(o) FROM Order o JOIN o.delivery d " +
+            "WHERE o.paymentMethod = 'COD' AND d.deliveryStatus = 'DELIVERED' AND o.paymentStatus <> 'PAID'")
+    long countCodDeliveredUnpaid();
+
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o JOIN o.delivery d " +
+            "WHERE o.paymentMethod = 'COD' AND d.deliveryStatus = 'RETURNED'")
+    double sumCodReturned();
+
+    @Query("SELECT COUNT(o) FROM Order o JOIN o.delivery d " +
+            "WHERE o.paymentMethod = 'COD' AND d.deliveryStatus = 'RETURNED'")
+    long countCodReturned();
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.paymentMethod = 'COD' AND o.delivery IS NOT NULL")
+    long countAllCodWithDelivery();
+
+    @Query("SELECT COALESCE(d.courierName, 'Unassigned'), COALESCE(SUM(o.totalAmount), 0), COUNT(o) " +
+            "FROM Order o JOIN o.delivery d WHERE o.paymentMethod = 'COD' GROUP BY d.courierName")
+    List<Object[]> codCourierMix();
+
+    @Query("SELECT o FROM Order o JOIN o.delivery d WHERE o.paymentMethod = 'COD' ORDER BY o.createdAt DESC")
+    List<Order> findCodOrders(org.springframework.data.domain.Pageable pageable);
 }

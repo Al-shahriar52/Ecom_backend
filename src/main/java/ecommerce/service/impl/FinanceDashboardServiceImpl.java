@@ -5,7 +5,6 @@ import ecommerce.repository.ExpenseRepository;
 import ecommerce.repository.OrderRepository;
 import ecommerce.service.AdminOrderService;
 import ecommerce.service.FinanceDashboardService;
-import ecommerce.utils.GatewayFeeRates;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -26,6 +25,7 @@ public class FinanceDashboardServiceImpl implements FinanceDashboardService {
     private final ExpenseRepository expenseRepository;
     private final AdminOrderService adminOrderService;
     private final ecommerce.service.ExpenseService expenseService;
+    private final ecommerce.service.GatewaySettingService gatewaySettingService;
 
     @Override
     public FinanceDashboardDto getDashboard(LocalDate start, LocalDate end, String grain) {
@@ -51,7 +51,7 @@ public class FinanceDashboardServiceImpl implements FinanceDashboardService {
             double amount = ((Number) row[1]).doubleValue();
             long count = ((Number) row[2]).longValue();
             gatewayMix.add(new GatewayMixItemDto(method.toLowerCase(), amount, count));
-            gatewayFees += amount * GatewayFeeRates.rateFor(method) / 100.0;
+            gatewayFees += amount * gatewaySettingService.getRate(method) / 100.0;
         }
         gatewayMix.sort((a, b) -> Double.compare(b.getAmount(), a.getAmount()));
 

@@ -12,6 +12,7 @@ import ecommerce.repository.DeliveryRepository;
 import ecommerce.repository.InvoiceRepository;
 import ecommerce.repository.OrderRepository;
 import ecommerce.service.AdminOrderService;
+import ecommerce.service.GatewaySettingService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -66,8 +67,10 @@ public class AdminOrderServiceImpl implements AdminOrderService {
         return orderPage.map(this::mapToTransactionDto);
     }
 
+    private final GatewaySettingService gatewaySettingService;
+
     private double gatewayFeeRate(String method) {
-        return ecommerce.utils.GatewayFeeRates.rateFor(method);
+        return gatewaySettingService.getRate(method);
     }
 
     private ecommerce.dto.admin.AdminTransactionDto mapToTransactionDto(Order order) {
