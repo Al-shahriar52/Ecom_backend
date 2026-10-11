@@ -29,6 +29,7 @@ public class AdminFinanceControllerImpl implements AdminFinanceController {
     private final FinancePLService financePLService;
     private final FinanceReportService financeReportService;
     private final GatewaySettingService gatewaySettingService;
+    private final ecommerce.service.impl.FinanceSettlementService financeSettlementService;
 
     @GetMapping("/dashboard")
     @SecurityRequirement(name = "bearerAuth")
@@ -68,6 +69,15 @@ public class AdminFinanceControllerImpl implements AdminFinanceController {
             @RequestParam(required = false, defaultValue = "week") String grain,
             @RequestParam(required = false, defaultValue = "12") int periods) {
         return new ResponseEntity<>(GenericResponseDto.success("Report fetched successfully", financeReportService.getWeeklyOrMonthlyReport(grain, periods), HttpStatus.OK.value()), HttpStatus.OK);
+    }
+
+    @GetMapping("/settlements")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getSettlements(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
+        return new ResponseEntity<>(GenericResponseDto.success("Settlements fetched successfully", financeSettlementService.get(start, end), HttpStatus.OK.value()), HttpStatus.OK);
     }
 
     @GetMapping("/gateways")

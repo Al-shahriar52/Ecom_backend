@@ -43,7 +43,7 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
 
     @Modifying
     @Query("UPDATE Order o SET o.orderStatus = :status WHERE o.id IN :orderIds")
-    int updateOrderStatusesByIds(@Param("orderIds") List<Long> orderIds, @Param("status") ecommerce.enums.OrderStatus status);
+    int updateOrderStatusesByIds(@Param("orderIds") List<Long> orderIds, @Param("status") OrderStatus status);
 
     List<Order> findByUserId(Long userId);
 
@@ -106,6 +106,37 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
             "FROM Order o JOIN o.delivery d WHERE o.paymentMethod = 'COD' GROUP BY d.courierName")
     List<Object[]> codCourierMix();
 
+    /** COD parcels grouped by courier + delivery status + payment status: {courier, status, paymentStatus, count, sum}. */
+    @Query("SELECT COALESCE(d.courierName, 'Unassigned'), d.deliveryStatus, o.paymentStatus, COUNT(o), COALESCE(SUM(o.totalAmount), 0) " +
+            "FROM Order o JOIN o.delivery d WHERE o.paymentMethod = 'COD' " +
+            "GROUP BY d.courierName, d.deliveryStatus, o.paymentStatus")
+    List<Object[]> codCourierBreakdown();
+
+    /** Booked courier fees in a period, per courier: {courier, sumFee, parcels}. */
+    @Query("SELECT COALESCE(d.courierName, 'Unassigned'), COALESCE(SUM(d.deliveryFee), 0), COUNT(d) " +
+            "FROM Delivery d WHERE d.deliveryFee IS NOT NULL AND d.requestedAt >= :start AND d.requestedAt < :end " +
+            "GROUP BY d.courierName")
+    List<Object[]> courierFeesBetween(@Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
+
+    // ============ SETTLEMENTS (online payments) ============
+
+    /** {method, count, sum} of online payments received in a period. */
+    @Query("SELECT o.paymentMethod, COUNT(o), COALESCE(SUM(o.totalAmount), 0) FROM Order o " +
+            "WHERE o.paymentMethod <> 'COD' AND o.paymentStatus = 'PAID' AND o.paidAt >= :start AND o.paidAt < :end " +
+            "GROUP BY o.paymentMethod")
+    List<Object[]> onlinePaidByMethod(@Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
+
+    /** {method, count, sum} of online payments still pending (not cancelled), any date. */
+    @Query("SELECT o.paymentMethod, COUNT(o), COALESCE(SUM(o.totalAmount), 0) FROM Order o " +
+            "WHERE o.paymentMethod <> 'COD' AND o.paymentStatus = 'PENDING' AND o.orderStatus <> 'CANCELLED' " +
+            "GROUP BY o.paymentMethod")
+    List<Object[]> onlinePendingByMethod();
+
+    @Query("SELECT o FROM Order o WHERE o.paymentMethod <> 'COD' AND o.paymentStatus = 'PAID' " +
+            "AND o.paidAt >= :start AND o.paidAt < :end ORDER BY o.paidAt DESC")
+    List<Order> findOnlinePaid(@Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end,
+                               Pageable pageable);
+
     @Query("SELECT o FROM Order o JOIN o.delivery d WHERE o.paymentMethod = 'COD' ORDER BY o.createdAt DESC")
-    List<Order> findCodOrders(org.springframework.data.domain.Pageable pageable);
+    List<Order> findCodOrders(Pageable pageable);
 }

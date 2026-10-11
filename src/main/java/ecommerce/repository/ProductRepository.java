@@ -50,7 +50,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             "LEFT JOIN SubCategory sc on sc.id=p.subCategory.id " +
             "LEFT JOIN Tag t on t.id=p.tag.id " +
             "GROUP BY p.id, p.name, p.description, b.name, c.name, sc.name, t.name, " +
-            "p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, p.slug, v.size " +
+            "p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, p.slug, p.createdAt " +
             " ORDER BY p.createdAt DESC " +
             "LIMIT 12")
     List<ProductSearchResponseDto> findByOrderByCreatedAtDesc();

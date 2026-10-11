@@ -1,6 +1,10 @@
 package ecommerce.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import ecommerce.courier.BookingRequest;
+import ecommerce.courier.BookingResult;
+import ecommerce.courier.CourierProvider;
+import ecommerce.courier.CourierRegistry;
 import ecommerce.dto.admin.AdminOrderListDTO;
 import ecommerce.dto.admin.OrderStatsDTO;
 import ecommerce.entity.Delivery;
@@ -34,7 +38,7 @@ public class AdminOrderServiceImpl implements AdminOrderService {
 
     private final OrderRepository orderRepository;
     private final InvoiceRepository invoiceRepository;
-    private final SteadfastService steadfastService;
+    private final CourierRegistry courierRegistry;
     private final DeliveryRepository deliveryRepository;
 
     @Override
@@ -236,8 +240,19 @@ public class AdminOrderServiceImpl implements AdminOrderService {
         }
     }*/
 
+    @Override
     @Transactional
     public void requestParcelPickup(List<Long> orderIds) {
+        requestParcelPickup(orderIds, null);
+    }
+
+    /**
+     * Books parcels with a courier. providerKey null = the default courier (Steadfast unless changed).
+     * Courier-specific work (single vs bulk, payloads, parsing) happens inside the CourierProvider.
+     */
+    @Override
+    @Transactional
+    public void requestParcelPickup(List<Long> orderIds, String providerKey) {
         if (orderIds == null || orderIds.isEmpty()) return;
 
         List<Order> orders = orderRepository.findAllById(orderIds);
@@ -257,133 +272,62 @@ public class AdminOrderServiceImpl implements AdminOrderService {
             throw new RuntimeException("No valid orders available for pickup.");
         }
 
+        CourierProvider provider = courierRegistry.resolve(providerKey);
+
+        List<BookingRequest> parcels = new ArrayList<>();
+        for (Order o : validOrdersForPickup) {
+            Invoice inv = invoiceMap.get(o.getId());
+            if (inv != null) parcels.add(new BookingRequest(o, inv));
+        }
+
+        Map<Long, Order> orderById = new HashMap<>();
+        validOrdersForPickup.forEach(o -> orderById.put(o.getId(), o));
+
         List<Delivery> deliveriesToSave = new ArrayList<>();
         List<Order> ordersToUpdate = new ArrayList<>();
 
-        // 1. ROUTING LOGIC: Single vs Bulk
-        if (validOrdersForPickup.size() == 1) {
-
-            // --- SINGLE ORDER ---
-            Order singleOrder = validOrdersForPickup.get(0);
-            Invoice singleInvoice = invoiceMap.get(singleOrder.getId());
-
-            // Note: Make sure steadfastService has this method implemented
-            JsonNode singleResponseNode = steadfastService.sendSinglePickupRequest(singleOrder, singleInvoice);
-            processResponseData(singleResponseNode, validOrdersForPickup, invoiceMap, deliveriesToSave, ordersToUpdate);
-
-        } else {
-
-            // --- BULK ORDERS ---
-            try {
-                JsonNode bulkResponseNode = steadfastService.sendBulkPickupRequest(validOrdersForPickup, invoiceMap);
-
-                // If the response is null or indicates a top-level error, throw exception to trigger fallback
-                if (bulkResponseNode == null || (bulkResponseNode.has("status") && bulkResponseNode.get("status").asInt() >= 400)) {
-                    throw new RuntimeException("Bulk API returned an error or null response.");
-                }
-
-                processResponseData(bulkResponseNode, validOrdersForPickup, invoiceMap, deliveriesToSave, ordersToUpdate);
-
-            } catch (Exception e) {
-                System.err.println("Bulk API failed. Falling back to single API loop. Error: " + e.getMessage());
-
-                // --- FALLBACK LOOP ---
-                for (Order order : validOrdersForPickup) {
-                    try {
-                        Invoice inv = invoiceMap.get(order.getId());
-                        JsonNode fallbackResponse = steadfastService.sendSinglePickupRequest(order, inv);
-
-                        // Process each one individually
-                        processResponseData(fallbackResponse, List.of(order), invoiceMap, deliveriesToSave, ordersToUpdate);
-                    } catch (Exception ex) {
-                        System.err.println("Fallback failed for invoice " + invoiceMap.get(order.getId()).getInvoiceNumber() + ": " + ex.getMessage());
-                    }
-                }
+        List<String> failures = new ArrayList<>();
+        for (BookingResult r : provider.book(parcels)) {
+            if (!r.success()) {
+                if (r.message() != null) failures.add(r.message());
+                continue;
             }
+            Order o = orderById.get(r.orderId());
+            if (o == null) continue;
+
+            // --- A. UPDATE THE ORDER ---
+            o.setOrderStatus(ecommerce.enums.OrderStatus.SHIPPED);
+            ordersToUpdate.add(o);
+
+            // --- B. CREATE THE DELIVERY RECORD ---
+            Delivery delivery = new Delivery();
+            delivery.setOrder(o);
+            delivery.setCourierName(provider.displayName());
+            delivery.setConsignmentId(r.consignmentId());
+            delivery.setTrackingCode(r.trackingCode());
+            delivery.setRequestedAt(LocalDateTime.now());
+            delivery.setDeliveryStatus(ecommerce.enums.DeliveryStatus.PENDING);
+
+            // Determine COD amount based on Payment Method
+            Invoice inv = invoiceMap.get(o.getId());
+            double codAmount = o.getPaymentMethod() == ecommerce.enums.PaymentMethod.COD ? inv.getTotalAmount() : 0.0;
+            delivery.setCodAmount(codAmount);
+            delivery.setDeliveryFee(r.deliveryFee());
+
+            delivery.setDeliveryType("Home Delivery");
+            deliveriesToSave.add(delivery);
         }
 
-        // 2. SAVE TO DATABASE
+        // Nothing booked and the courier told us why: show the admin instead of a silent success.
+        if (deliveriesToSave.isEmpty() && !failures.isEmpty()) {
+            throw new BadRequestException(provider.displayName() + " could not book: "
+                    + String.join(" | ", failures.subList(0, Math.min(3, failures.size()))));
+        }
+
         // Save everything to the database in two efficient bulk batches
         if (!deliveriesToSave.isEmpty()) {
             deliveryRepository.saveAll(deliveriesToSave);
             orderRepository.saveAll(ordersToUpdate);
-        }
-    }
-
-    /**
-     * Helper method to parse the Steadfast JSON response and map it to Delivery and Order entities.
-     * This handles both Single API responses (single object) and Bulk API responses (arrays).
-     */
-    private void processResponseData(
-            JsonNode responseNode,
-            List<Order> validOrdersForPickup,
-            Map<Long, Invoice> invoiceMap,
-            List<Delivery> deliveriesToSave,
-            List<Order> ordersToUpdate) {
-
-        if (responseNode == null) return;
-
-        List<JsonNode> dataItems = new ArrayList<>();
-
-        // Safely extract the data whether it's an array (Bulk) or a single object wrapped in "consignment" (Single)
-        if (responseNode.isArray()) {
-            responseNode.forEach(dataItems::add);
-        } else if (responseNode.has("data") && responseNode.get("data").isArray()) {
-            responseNode.get("data").forEach(dataItems::add);
-        } else if (responseNode.has("consignment")) {
-            // Common structure for Steadfast single order response
-            dataItems.add(responseNode.get("consignment"));
-        } else {
-            // Fallback for direct object response
-            dataItems.add(responseNode);
-        }
-
-        for (JsonNode item : dataItems) {
-            // Checking for consignment_id is a more reliable success check across both Single and Bulk endpoints
-            if (item.has("consignment_id") && item.has("tracking_code")) {
-
-                String returnedInvoiceNumber = item.has("invoice") ? item.get("invoice").asText() : null;
-                String consignmentId = item.get("consignment_id").asText();
-                String trackingCode = item.get("tracking_code").asText();
-
-                // Find the matching order
-                validOrdersForPickup.stream()
-                        .filter(o -> {
-                            // If Steadfast didn't return the invoice number (happens occasionally on single API),
-                            // and we only sent one order, just match it automatically. Otherwise, match by invoice.
-                            if (returnedInvoiceNumber == null && validOrdersForPickup.size() == 1) return true;
-                            return invoiceMap.get(o.getId()).getInvoiceNumber().equals(returnedInvoiceNumber);
-                        })
-                        .findFirst()
-                        .ifPresent(o -> {
-
-                            // --- A. UPDATE THE ORDER ---
-                            o.setOrderStatus(ecommerce.enums.OrderStatus.SHIPPED);
-                            ordersToUpdate.add(o);
-
-                            // --- B. CREATE THE DELIVERY RECORD ---
-                            Delivery delivery = new Delivery();
-                            delivery.setOrder(o);
-                            delivery.setCourierName("Steadfast");
-                            delivery.setConsignmentId(consignmentId);
-                            delivery.setTrackingCode(trackingCode);
-                            delivery.setRequestedAt(LocalDateTime.now());
-                            delivery.setDeliveryStatus(ecommerce.enums.DeliveryStatus.PENDING);
-
-                            // Determine COD amount based on Payment Method
-                            Invoice inv = invoiceMap.get(o.getId());
-                            double codAmount = o.getPaymentMethod() == ecommerce.enums.PaymentMethod.COD ? inv.getTotalAmount() : 0.0;
-                            delivery.setCodAmount(codAmount);
-
-                            // You can set a default delivery type based on your business logic
-                            delivery.setDeliveryType("Home Delivery");
-
-                            deliveriesToSave.add(delivery);
-                        });
-            } else {
-                String errorInv = item.has("invoice") ? item.get("invoice").asText() : "Unknown";
-                System.err.println("Steadfast failed or missing data for invoice: " + errorInv);
-            }
         }
     }
 
@@ -467,6 +411,9 @@ public class AdminOrderServiceImpl implements AdminOrderService {
         dto.setPhone(order.getPhoneNumber());
         dto.setEmail(order.getEmail());
         dto.setAddress(order.getCity() + ", " + order.getArea() + ", " + order.getShippingAddress());
+        dto.setShippingAddress(order.getShippingAddress());
+        dto.setCity(order.getCity());
+        dto.setArea(order.getArea());
         dto.setTotalAmount(order.getTotalAmount());
         dto.setShippingCost(order.getShippingCost());
         dto.setOrderNote(order.getOrderNote());
@@ -481,7 +428,10 @@ public class AdminOrderServiceImpl implements AdminOrderService {
         if (order.getDelivery() != null) {
             dto.setDeliveryStatus(order.getDelivery().getDeliveryStatus() != null ? order.getDelivery().getDeliveryStatus().name() : "-");
             dto.setCid(order.getDelivery().getConsignmentId());
+            dto.setCourier(order.getDelivery().getCourierName());
             dto.setTrackingCode(order.getDelivery().getTrackingCode());
+            dto.setCourierStatus(order.getDelivery().getCourierStatus());
+            dto.setLastSyncedAt(order.getDelivery().getLastSyncedAt());
         }
 
         List<ecommerce.dto.admin.AdminOrderItemDTO> items = order.getOrderItems().stream().map(item -> {
@@ -511,7 +461,11 @@ public class AdminOrderServiceImpl implements AdminOrderService {
         dto.setPhone(order.getPhoneNumber());
         dto.setEmail(order.getEmail());
         dto.setAddress(order.getCity() + ", " + order.getArea() + ", " + order.getShippingAddress());
+        dto.setShippingAddress(order.getShippingAddress());
+        dto.setCity(order.getCity());
+        dto.setArea(order.getArea());
         dto.setId(order.getId());
+        dto.setOrderNote(order.getOrderNote());
         dto.setTotalAmount(order.getTotalAmount());
         dto.setPaymentMethod(order.getPaymentMethod() != null ? order.getPaymentMethod().name() : "-");
         dto.setPaymentStatus(order.getPaymentStatus() != null ? order.getPaymentStatus().name() : "-");
@@ -524,6 +478,7 @@ public class AdminOrderServiceImpl implements AdminOrderService {
         if (order.getDelivery() != null) {
             dto.setDeliveryStatus(order.getDelivery().getDeliveryStatus() != null ? order.getDelivery().getDeliveryStatus().name() : "-");
             dto.setCid(order.getDelivery().getConsignmentId());
+            dto.setCourier(order.getDelivery().getCourierName());
         }
 
         return dto;

@@ -16,4 +16,6 @@ public class ReportRowDto {
     private double cogs;
     private double operatingCost;
     private double netEarning;
+    /** Courier fees booked in the period (memo; not deducted, you may already log courier spend as an expense). */
+    private double courierFees;
 }

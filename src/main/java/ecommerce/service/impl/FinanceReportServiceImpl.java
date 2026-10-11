@@ -72,6 +72,11 @@ public class FinanceReportServiceImpl implements FinanceReportService {
         double operating = expenseRepository.sumOperating(start, end);
         double net = gross - refunds - fees - cogs - operating;
 
-        return new ReportRowDto(label, orders, gross, refunds, fees, cogs, operating, net);
+        double courierFees = 0;
+        for (Object[] r : orderRepository.courierFeesBetween(startDT, endDT)) {
+            courierFees += ((Number) r[1]).doubleValue();
+        }
+
+        return new ReportRowDto(label, orders, gross, refunds, fees, cogs, operating, net, courierFees);
     }
 }

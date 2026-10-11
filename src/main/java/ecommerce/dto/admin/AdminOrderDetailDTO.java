@@ -14,6 +14,9 @@ public class AdminOrderDetailDTO {
     private String phone;
     private String email;
     private String address;
+    private String shippingAddress;
+    private String city;
+    private String area;
     private Double totalAmount;
     private Double shippingCost;
     private String paymentMethod;
@@ -21,7 +24,10 @@ public class AdminOrderDetailDTO {
     private String orderStatus;
     private String deliveryStatus;
     private String cid;
+    private String courier;
     private String trackingCode;
+    private String courierStatus;
+    private LocalDateTime lastSyncedAt;
     private String orderNote;
     private List<AdminOrderItemDTO> items;
 }

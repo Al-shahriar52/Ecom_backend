@@ -19,4 +19,5 @@ public class CodSummaryDto {
     private double returnRatePct;
     private List<CourierMixItemDto> courierMix;
     private List<AdminCodParcelDto> parcels;
+    private List<CourierCodStatDto> courierStats;
 }

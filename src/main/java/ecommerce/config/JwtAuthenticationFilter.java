@@ -128,7 +128,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) throws ServletException {
         String path = request.getServletPath();
-        return path.equals("/api/v1/user/refreshAccessToken");
+        return path.equals("/api/v1/user/refreshAccessToken")
+                // OAuth2 (Google/Facebook) handshake URLs must never be blocked by a stale/invalid cookie
+                || path.startsWith("/oauth2/")
+                || path.startsWith("/login/oauth2/");
     }
 
     @Override
