@@ -14,7 +14,8 @@ public class AdminOrderListDTO {
     private String paymentStatus;    // From Order entity
     private String orderStatus;      // From Order entity
     private String deliveryStatus;   // From Delivery entity
-    private String cid;              // From Delivery entity (consignmentId)
+    private String cid;
+    private String courier;           // From Delivery entity (courierName), e.g. Steadfast / Pathao              // From Delivery entity (consignmentId)
     private String email;
     private String address;
     private Long id;

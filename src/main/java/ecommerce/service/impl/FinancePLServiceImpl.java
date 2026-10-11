@@ -73,6 +73,15 @@ public class FinancePLServiceImpl implements FinancePLService {
         return p;
     }
 
+    private Map<String, Double> courierFees(LocalDate start, LocalDate end) {
+        Map<String, Double> m = new LinkedHashMap<>();
+        for (Object[] r : orderRepository.courierFeesBetween(start.atStartOfDay(), end.plusDays(1).atStartOfDay())) {
+            double v = ((Number) r[1]).doubleValue();
+            if (v != 0) m.put((String) r[0], v);
+        }
+        return m;
+    }
+
     @Override
     public ProfitLossDto getProfitLoss(LocalDate start, LocalDate end) {
         if (start == null || end == null) {
@@ -101,6 +110,17 @@ public class FinancePLServiceImpl implements FinancePLService {
             double prevVal = prev.categoryTotals.getOrDefault(e.getKey(), 0.0);
             if (curVal == 0 && prevVal == 0) continue;
             lines.add(new PLLineDto(e.getValue(), -curVal, -prevVal, (curVal / sales) * 100, false, 0));
+        }
+
+        // Memo lines: fees the couriers quoted on booking. Not added to the totals below, because
+        // courier spend may already be logged under "Courier & delivery" expenses.
+        Map<String, Double> curFees = courierFees(start, end);
+        Map<String, Double> prevFees = courierFees(prevStart, prevEnd);
+        Set<String> feeCouriers = new TreeSet<>(curFees.keySet());
+        feeCouriers.addAll(prevFees.keySet());
+        for (String c : feeCouriers) {
+            double cv = curFees.getOrDefault(c, 0.0), pv = prevFees.getOrDefault(c, 0.0);
+            lines.add(new PLLineDto("  memo: " + c + " fees booked (not deducted)", -cv, -pv, (cv / sales) * 100, false, 0));
         }
 
         lines.add(new PLLineDto("Gateway fees", -cur.gatewayFees, -prev.gatewayFees, (cur.gatewayFees / sales) * 100, false, 0));

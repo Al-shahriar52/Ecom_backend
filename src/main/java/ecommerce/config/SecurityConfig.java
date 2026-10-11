@@ -51,11 +51,10 @@ public class SecurityConfig {
                         "/api/v1/product/similar/{productId}",
                         "/api/v1/user/refreshAccessToken",
                         "/api/v1/auth/guest",
+                        "/api/v1/webhooks/**",
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
-                        "/swagger-ui.html",
-                        "/oauth2/**",
-                        "/login/oauth2/**")
+                        "/swagger-ui.html")
                         .permitAll()
                 .anyRequest().authenticated()
         )

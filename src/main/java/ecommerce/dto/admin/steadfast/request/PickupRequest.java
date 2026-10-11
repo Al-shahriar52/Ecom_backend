@@ -13,4 +13,7 @@ import java.util.List;
 public class PickupRequest {
     @NotNull
     private List<Long> orderIds;
+
+    /** Optional courier key ("steadfast", "pathao"). Omit to use the default courier. */
+    private String courier;
 }

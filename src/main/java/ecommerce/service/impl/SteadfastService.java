@@ -1,6 +1,7 @@
 package ecommerce.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import ecommerce.courier.PickupOutcome;
 import ecommerce.entity.Invoice;
 import ecommerce.entity.Order;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,7 +24,115 @@ public class SteadfastService {
     @Value("${steadfast.api.single-pickup-endpoint}")
     private String singlePickupEndpoint;
 
+    @Value("${steadfast.api.base-url}")
+    private String baseUrl;
+
     private final RestTemplate restTemplate = new RestTemplate();
+
+    // Police stations almost never change - cache for 12h to spare the API.
+    private volatile JsonNode policeStationCache;
+    private volatile long policeStationCachedAt = 0;
+    private static final long POLICE_CACHE_MS = 12L * 60 * 60 * 1000;
+
+    private HttpHeaders authHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Api-Key", apiKey);
+        headers.set("Secret-Key", secretKey);
+        return headers;
+    }
+
+    /** POST /create_pickup_request. 201 = created; 409 PICKUP_REQUEST_EXISTS = one already pending (safe to retry). */
+    public PickupOutcome createPickupRequest(Long addressId, Long policeStationId, String address,
+                                             String contactNumber, String note, Integer estimQty) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("address_id", addressId);
+        payload.put("police_station_id", policeStationId);
+        payload.put("address", address);
+        payload.put("contact_number", contactNumber);
+        if (note != null && !note.isBlank()) payload.put("note", note);
+        if (estimQty != null) payload.put("estim_qty", estimQty);
+
+        try {
+            ResponseEntity<JsonNode> response = restTemplate.postForEntity(
+                    baseUrl + "/create_pickup_request", new HttpEntity<>(payload, authHeaders()), JsonNode.class);
+            JsonNode body = response.getBody();
+            String id = null;
+            if (body != null) {
+                JsonNode data = body.has("data") ? body.get("data") : body;
+                if (data != null && data.has("id")) id = data.get("id").asText();
+            }
+            String msg = body != null && body.has("message") ? body.get("message").asText() : "Pickup request submitted";
+            return new PickupOutcome("SUBMITTED", id, msg);
+        } catch (org.springframework.web.client.HttpStatusCodeException e) {
+            String text = e.getResponseBodyAsString();
+            if (e.getStatusCode().value() == 409 || (text != null && text.contains("PICKUP_REQUEST_EXISTS"))) {
+                return new PickupOutcome("ALREADY_PENDING", null,
+                        "A pickup request is already pending - the rider will collect all your parcels in one visit.");
+            }
+            String msg = switch (e.getStatusCode().value()) {
+                case 401, 403 -> "Steadfast rejected the API credentials";
+                case 422 -> "Steadfast rejected the details: " + text;
+                case 429 -> "Steadfast rate limit hit - try again in a minute";
+                default -> "Steadfast error " + e.getStatusCode().value() + ": " + text;
+            };
+            return new PickupOutcome("FAILED", null, msg);
+        } catch (Exception e) {
+            return new PickupOutcome("FAILED", null, "Could not reach Steadfast: " + e.getMessage());
+        }
+    }
+
+    /** GET /status_by_cid/{id} -> {status:200, delivery_status:"..."} (answers are cached 60s by Steadfast). */
+    public JsonNode getStatusByCid(String consignmentId) {
+        ResponseEntity<JsonNode> res = restTemplate.exchange(baseUrl + "/status_by_cid/" + consignmentId,
+                HttpMethod.GET, new HttpEntity<>(authHeaders()), JsonNode.class);
+        return res.getBody();
+    }
+
+    /** GET /trackings_by_invoice/{invoice} -> {status:200, tracking:[{tracking_type, text, created_at}]} */
+    public JsonNode getTrackingByInvoice(String invoice) {
+        ResponseEntity<JsonNode> res = restTemplate.exchange(baseUrl + "/trackings_by_invoice/" + invoice,
+                HttpMethod.GET, new HttpEntity<>(authHeaders()), JsonNode.class);
+        return res.getBody();
+    }
+
+    /** GET /fraud_check/score/{phone}: the customer's delivery record across merchants. 429 when over the rate limit. */
+    public JsonNode getFraudCheck(String phone) {
+        return restTemplate.exchange(baseUrl + "/fraud_check/score/" + phone, HttpMethod.GET,
+                new HttpEntity<>(authHeaders()), JsonNode.class).getBody();
+    }
+
+    /** GET /get_balance -> {status:200, current_balance}. What Steadfast currently owes us. */
+    public JsonNode getBalance() {
+        return restTemplate.exchange(baseUrl + "/get_balance", HttpMethod.GET,
+                new HttpEntity<>(authHeaders()), JsonNode.class).getBody();
+    }
+
+    /** GET /payments?page=N -> {payments:[{payment_id, amount, method, charges, status_label, paid_at...}]}, ten per page. */
+    public JsonNode getPayments(int page) {
+        return restTemplate.exchange(baseUrl + "/payments?page=" + Math.max(1, page), HttpMethod.GET,
+                new HttpEntity<>(authHeaders()), JsonNode.class).getBody();
+    }
+
+    /** GET /police_stations (cached). */
+    public JsonNode getPoliceStations() {
+        long now = System.currentTimeMillis();
+        if (policeStationCache != null && now - policeStationCachedAt < POLICE_CACHE_MS) {
+            return policeStationCache;
+        }
+        try {
+            ResponseEntity<JsonNode> response = restTemplate.exchange(
+                    baseUrl + "/police_stations", HttpMethod.GET, new HttpEntity<>(authHeaders()), JsonNode.class);
+            JsonNode body = response.getBody();
+            JsonNode list = body != null && body.has("data") ? body.get("data") : body;
+            policeStationCache = list;
+            policeStationCachedAt = now;
+            return list;
+        } catch (Exception e) {
+            if (policeStationCache != null) return policeStationCache; // stale beats nothing
+            throw new RuntimeException("Failed to load police stations from Steadfast: " + e.getMessage());
+        }
+    }
 
     public JsonNode sendBulkPickupRequest(List<Order> orders, Map<Long, Invoice> invoiceMap) {
         HttpHeaders headers = new HttpHeaders();

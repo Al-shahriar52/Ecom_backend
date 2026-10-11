@@ -21,7 +21,10 @@ public class AdminOrderDetailDTO {
     private String orderStatus;
     private String deliveryStatus;
     private String cid;
+    private String courier;
     private String trackingCode;
+    private String courierStatus;
+    private LocalDateTime lastSyncedAt;
     private String orderNote;
     private List<AdminOrderItemDTO> items;
 }

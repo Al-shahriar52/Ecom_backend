@@ -15,6 +15,9 @@ public interface AdminOrderService {
     void cancelOrders(List<String> invoices);
     void requestParcelPickup(List<Long> orderIds);
 
+    /** providerKey null = default courier. */
+    void requestParcelPickup(List<Long> orderIds, String providerKey);
+
     AdminOrderDetailDTO getOrderById(Long orderId);
     void updateOrderStatus(Long orderId, UpdateOrderStatusRequest request);
 
