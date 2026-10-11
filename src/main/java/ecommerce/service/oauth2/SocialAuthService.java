@@ -9,17 +9,17 @@ import ecommerce.repository.SocialAccountRepository;
 import ecommerce.repository.UserRepository;
 import ecommerce.service.ActivityService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Finds or creates the application User for a Google/Facebook login.
- * Only active when the "oauth2" Spring profile is on.
  */
 @Service
 @RequiredArgsConstructor
@@ -28,6 +28,7 @@ public class SocialAuthService {
     private final UserRepository userRepository;
     private final SocialAccountRepository socialAccountRepository;
     private final ActivityService activityService;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public User findOrCreateUser(SocialProvider provider,
@@ -73,7 +74,7 @@ public class SocialAuthService {
                 // unverified password so whoever pre-registered it cannot log in with it.
                 user.setStatus(true);
                 user.setAccountState(AccountState.ACTIVE);
-                user.setPassword(null);
+                user.setPassword(unusablePassword());
                 user.setOtp(null);
                 user.setOtpExpiry(null);
                 userRepository.save(user);
@@ -82,6 +83,9 @@ public class SocialAuthService {
             user = new User();
             user.setName(displayName(name, cleanEmail));
             user.setEmail(cleanEmail);
+            // The users table has a NOT NULL password column, so give social users a random password
+            // nobody knows (they sign in with Google/Facebook, or can use "forgot password" later).
+            user.setPassword(unusablePassword());
             user.setStatus(true);
             user.setAccountState(AccountState.ACTIVE);
             user.getRoles().add(Role.USER);
@@ -96,6 +100,11 @@ public class SocialAuthService {
         socialAccountRepository.save(link);
 
         return user;
+    }
+
+    /** Random, never-shared password (BCrypt hash) so the NOT NULL password column is always satisfied. */
+    private String unusablePassword() {
+        return passwordEncoder.encode(UUID.randomUUID().toString());
     }
 
     private void assertNotSuspended(User user) {
