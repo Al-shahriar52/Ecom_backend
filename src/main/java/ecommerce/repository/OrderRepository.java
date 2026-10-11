@@ -118,6 +118,25 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
             "GROUP BY d.courierName")
     List<Object[]> courierFeesBetween(@Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
 
+    // ============ SETTLEMENTS (online payments) ============
+
+    /** {method, count, sum} of online payments received in a period. */
+    @Query("SELECT o.paymentMethod, COUNT(o), COALESCE(SUM(o.totalAmount), 0) FROM Order o " +
+            "WHERE o.paymentMethod <> 'COD' AND o.paymentStatus = 'PAID' AND o.paidAt >= :start AND o.paidAt < :end " +
+            "GROUP BY o.paymentMethod")
+    List<Object[]> onlinePaidByMethod(@Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
+
+    /** {method, count, sum} of online payments still pending (not cancelled), any date. */
+    @Query("SELECT o.paymentMethod, COUNT(o), COALESCE(SUM(o.totalAmount), 0) FROM Order o " +
+            "WHERE o.paymentMethod <> 'COD' AND o.paymentStatus = 'PENDING' AND o.orderStatus <> 'CANCELLED' " +
+            "GROUP BY o.paymentMethod")
+    List<Object[]> onlinePendingByMethod();
+
+    @Query("SELECT o FROM Order o WHERE o.paymentMethod <> 'COD' AND o.paymentStatus = 'PAID' " +
+            "AND o.paidAt >= :start AND o.paidAt < :end ORDER BY o.paidAt DESC")
+    List<Order> findOnlinePaid(@Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end,
+                               Pageable pageable);
+
     @Query("SELECT o FROM Order o JOIN o.delivery d WHERE o.paymentMethod = 'COD' ORDER BY o.createdAt DESC")
     List<Order> findCodOrders(Pageable pageable);
 }

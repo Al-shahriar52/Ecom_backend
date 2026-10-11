@@ -17,6 +17,10 @@ public class AdminOrderListDTO {
     private String cid;
     private String courier;           // From Delivery entity (courierName), e.g. Steadfast / Pathao              // From Delivery entity (consignmentId)
     private String email;
-    private String address;
+    private String address;           // city, area, street joined, for display
+    private String shippingAddress;   // street part only (what the edit forms change)
+    private String city;
+    private String area;
+    private String orderNote;
     private Long id;
 }

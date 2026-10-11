@@ -20,6 +20,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     @Query("UPDATE Invoice i SET i.status = :status WHERE i.invoiceNumber IN :invoices")
     int updateInvoiceStatuses(@Param("invoices") List<String> invoices, @Param("status") InvoiceStatus status);
 
+    List<Invoice> findByInvoiceNumberIn(List<String> invoiceNumbers);
+
     List<Invoice> findByOrder_IdIn(List<Long> orderIds);
 
     Optional<Invoice> findByOrder(Order order);

@@ -27,6 +27,7 @@ public class AdminCourierSettingsController {
     private final SteadfastPayoutService payoutService;
     private final CustomerCheckService customerCheckService;
     private final ecommerce.repository.WebhookEventRepository webhookEvents;
+    private final ecommerce.service.impl.PayoutReconciliationService reconciliationService;
 
     private ResponseEntity<?> ok(String msg, Object data) {
         return new ResponseEntity<>(GenericResponseDto.success(msg, data, HttpStatus.OK.value()), HttpStatus.OK);
@@ -53,6 +54,11 @@ public class AdminCourierSettingsController {
     @GetMapping("/steadfast/customer-check")
     public ResponseEntity<?> customerCheck(@RequestParam String phone) {
         return ok("Customer checked", customerCheckService.check(phone));
+    }
+
+    @GetMapping("/steadfast/payouts/{paymentId}")
+    public ResponseEntity<?> payoutDetail(@PathVariable String paymentId) {
+        return ok("Payout reconciled", reconciliationService.reconcile(paymentId));
     }
 
     @GetMapping("/steadfast/payouts")

@@ -14,6 +14,9 @@ public class AdminOrderDetailDTO {
     private String phone;
     private String email;
     private String address;
+    private String shippingAddress;
+    private String city;
+    private String area;
     private Double totalAmount;
     private Double shippingCost;
     private String paymentMethod;

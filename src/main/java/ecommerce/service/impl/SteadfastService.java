@@ -102,6 +102,13 @@ public class SteadfastService {
                 new HttpEntity<>(authHeaders()), JsonNode.class).getBody();
     }
 
+    /** GET /payments/{id}: one payout with every parcel it settled (digits only; "SFC-88213" == "88213"). */
+    public JsonNode getPaymentDetail(String paymentId) {
+        String digits = paymentId == null ? "" : paymentId.replaceAll("\\D", "");
+        return restTemplate.exchange(baseUrl + "/payments/" + digits, HttpMethod.GET,
+                new HttpEntity<>(authHeaders()), JsonNode.class).getBody();
+    }
+
     /** GET /get_balance -> {status:200, current_balance}. What Steadfast currently owes us. */
     public JsonNode getBalance() {
         return restTemplate.exchange(baseUrl + "/get_balance", HttpMethod.GET,

@@ -411,6 +411,9 @@ public class AdminOrderServiceImpl implements AdminOrderService {
         dto.setPhone(order.getPhoneNumber());
         dto.setEmail(order.getEmail());
         dto.setAddress(order.getCity() + ", " + order.getArea() + ", " + order.getShippingAddress());
+        dto.setShippingAddress(order.getShippingAddress());
+        dto.setCity(order.getCity());
+        dto.setArea(order.getArea());
         dto.setTotalAmount(order.getTotalAmount());
         dto.setShippingCost(order.getShippingCost());
         dto.setOrderNote(order.getOrderNote());
@@ -458,7 +461,11 @@ public class AdminOrderServiceImpl implements AdminOrderService {
         dto.setPhone(order.getPhoneNumber());
         dto.setEmail(order.getEmail());
         dto.setAddress(order.getCity() + ", " + order.getArea() + ", " + order.getShippingAddress());
+        dto.setShippingAddress(order.getShippingAddress());
+        dto.setCity(order.getCity());
+        dto.setArea(order.getArea());
         dto.setId(order.getId());
+        dto.setOrderNote(order.getOrderNote());
         dto.setTotalAmount(order.getTotalAmount());
         dto.setPaymentMethod(order.getPaymentMethod() != null ? order.getPaymentMethod().name() : "-");
         dto.setPaymentStatus(order.getPaymentStatus() != null ? order.getPaymentStatus().name() : "-");
