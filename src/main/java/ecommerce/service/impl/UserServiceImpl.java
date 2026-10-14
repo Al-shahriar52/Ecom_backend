@@ -1,6 +1,7 @@
 package ecommerce.service.impl;
 
 import ecommerce.dto.UserDto;
+import ecommerce.dto.auth.ChangePasswordRequest;
 import ecommerce.dto.admin.user.UserStatsDto;
 import ecommerce.dto.pageResponse.UserResponse;
 import ecommerce.entity.AccountState;
@@ -21,6 +22,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -40,6 +42,7 @@ public class UserServiceImpl implements UserService {
     private final ModelMapper mapper;
     private final TokenUtil tokenUtil;
     private final ActivityService activityService;
+    private final PasswordEncoder passwordEncoder;
 
     public UserDto add(UserDto userDto) {
 
@@ -69,6 +72,28 @@ public class UserServiceImpl implements UserService {
         List<UserDto> userList = content.stream().map(this::mapToDto).toList();
 
         return getUserResponse(users, userList);
+    }
+
+    @Override
+    public void changePassword(ChangePasswordRequest request, HttpServletRequest servletRequest) {
+
+        User userInfo = tokenUtil.extractUserInfo(servletRequest);
+        User user = userRepository.findById(userInfo.getId()).orElseThrow(() ->
+                new ResourceNotFound("User", "id", userInfo.getId()));
+
+        // matches() is null-safe: accounts without a usable password (e.g. Google/Facebook sign-ups) simply fail here
+        // and are pointed to the "forgot password" flow by the frontend.
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new BadRequestException("Current password is incorrect.");
+        }
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new BadRequestException("New password must be different from your current password.");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        activityService.logActivity(user.getId(), "Password changed from account dashboard.");
     }
 
     @Override

@@ -1,6 +1,7 @@
 package ecommerce.controller;
 
 import ecommerce.dto.UserDto;
+import ecommerce.dto.auth.ChangePasswordRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,7 @@ public interface UserController {
     ResponseEntity<?> getById(HttpServletRequest servletRequest);
     ResponseEntity<?> getAll(int pageNo, int pageSize, String sortBy);
     ResponseEntity<?> update(UserDto userDto, HttpServletRequest servletRequest);
+    ResponseEntity<?> changePassword(ChangePasswordRequest request, HttpServletRequest servletRequest);
     ResponseEntity<?> search(int pageNo, int pageSize, String sortBy, String query);
     ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse servletResponse);
 }
