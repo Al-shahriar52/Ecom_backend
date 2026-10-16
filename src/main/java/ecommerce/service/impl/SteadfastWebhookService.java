@@ -72,7 +72,11 @@ public class SteadfastWebhookService {
                     ev.setOutcome("UNMATCHED");
                 } else {
                     DeliveryStatus mapped = SteadfastProvider.mapStatus(status);
-                    boolean changed = applier.apply(delivery.get().getId(), new CourierStatus(mapped, status, null));
+                    String riderName = firstText(root, "rider_name", "rider.name", "delivery_man_name", "delivery_man.name", "deliveryman_name", "driver_name",
+                            "data.rider_name", "data.rider.name", "data.delivery_man_name", "parcel.rider_name");
+                    String riderPhone = firstText(root, "rider_phone", "rider.phone", "rider_mobile", "rider.mobile", "delivery_man_phone", "delivery_man.phone",
+                            "deliveryman_phone", "driver_phone", "data.rider_phone", "data.rider.phone", "data.delivery_man_phone", "parcel.rider_phone");
+                    boolean changed = applier.apply(delivery.get().getId(), new CourierStatus(mapped, status, null), "WEBHOOK", riderName, riderPhone);
                     ev.setOutcome(changed ? "APPLIED" : "NO_CHANGE");
                 }
             }

@@ -18,6 +18,9 @@ public interface AdminOrderService {
     /** providerKey null = default courier. */
     void requestParcelPickup(List<Long> orderIds, String providerKey);
 
+    /** codOverrides: orderId -> amount to collect, replacing the invoice total for that parcel (may be null). */
+    void requestParcelPickup(List<Long> orderIds, String providerKey, java.util.Map<Long, Double> codOverrides);
+
     AdminOrderDetailDTO getOrderById(Long orderId);
     void updateOrderStatus(Long orderId, UpdateOrderStatusRequest request);
 

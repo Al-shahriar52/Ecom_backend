@@ -142,6 +142,11 @@ public class SteadfastService {
     }
 
     public JsonNode sendBulkPickupRequest(List<Order> orders, Map<Long, Invoice> invoiceMap) {
+        return sendBulkPickupRequest(orders, invoiceMap, null);
+    }
+
+    /** codOverrides: orderId -> amount to collect (only used for COD orders). */
+    public JsonNode sendBulkPickupRequest(List<Order> orders, Map<Long, Invoice> invoiceMap, Map<Long, Double> codOverrides) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Api-Key", apiKey);
@@ -161,7 +166,9 @@ public class SteadfastService {
             item.put("recipient_address", order.getShippingAddress() + ", " + order.getArea() + ", " + order.getCity());
             item.put("recipient_phone", order.getPhoneNumber() != null ? order.getPhoneNumber() : "");
             
-            double codAmount = order.getPaymentMethod() == ecommerce.enums.PaymentMethod.COD ? invoice.getTotalAmount() : 0.0;
+            double codAmount = order.getPaymentMethod() == ecommerce.enums.PaymentMethod.COD
+                    ? (codOverrides != null && codOverrides.get(order.getId()) != null ? codOverrides.get(order.getId()) : invoice.getTotalAmount())
+                    : 0.0;
             item.put("cod_amount", codAmount);
             item.put("note", order.getOrderNote());
             
@@ -185,6 +192,11 @@ public class SteadfastService {
     }
 
     public JsonNode sendSinglePickupRequest(Order order, Invoice invoice) {
+        return sendSinglePickupRequest(order, invoice, null);
+    }
+
+    /** codOverride: amount to collect instead of the invoice total (only used for COD orders). */
+    public JsonNode sendSinglePickupRequest(Order order, Invoice invoice, Double codOverride) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Api-Key", apiKey);
@@ -201,7 +213,9 @@ public class SteadfastService {
         payload.put("recipient_address", order.getShippingAddress() + ", " + order.getArea() + ", " + order.getCity());
         payload.put("recipient_phone", order.getPhoneNumber() != null ? order.getPhoneNumber() : "");
 
-        double codAmount = order.getPaymentMethod() == ecommerce.enums.PaymentMethod.COD ? invoice.getTotalAmount() : 0.0;
+        double codAmount = order.getPaymentMethod() == ecommerce.enums.PaymentMethod.COD
+                ? (codOverride != null ? codOverride : invoice.getTotalAmount())
+                : 0.0;
         payload.put("cod_amount", codAmount);
         payload.put("note", order.getOrderNote());
 

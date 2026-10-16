@@ -109,8 +109,7 @@ public class PathaoProvider implements CourierProvider {
         }
         if (qty < 1) qty = 1;
 
-        long cod = o.getPaymentMethod() == ecommerce.enums.PaymentMethod.COD && inv.getTotalAmount() != null
-                ? Math.round(inv.getTotalAmount()) : 0L;
+        long cod = Math.round(p.cod());
 
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("store_id", storeId);

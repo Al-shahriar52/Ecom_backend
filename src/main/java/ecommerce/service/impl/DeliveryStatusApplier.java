@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 public class DeliveryStatusApplier {
 
     private final DeliveryRepository deliveryRepository;
+    private final ecommerce.repository.DeliveryEventRepository eventRepository;
 
     private static boolean terminal(DeliveryStatus s) {
         return s == DeliveryStatus.DELIVERED || s == DeliveryStatus.RETURNED || s == DeliveryStatus.CANCELLED;
@@ -33,13 +34,37 @@ public class DeliveryStatusApplier {
         };
     }
 
-    /** @return true if the delivery status actually changed. */
-    @Transactional
     public boolean apply(Long deliveryId, CourierStatus cs) {
+        return apply(deliveryId, cs, "SYNC", null, null);
+    }
+
+    /**
+     * @param source "WEBHOOK" or "SYNC", kept in the status history
+     * @param riderName / riderPhone optional, stored only when the courier supplied them
+     * @return true if the delivery status actually changed.
+     */
+    @Transactional
+    public boolean apply(Long deliveryId, CourierStatus cs, String source, String riderName, String riderPhone) {
         Delivery d = deliveryRepository.findById(deliveryId).orElse(null);
         if (d == null) return false;
 
         LocalDateTime now = LocalDateTime.now();
+
+        // Status history: one row each time the courier's own wording changes.
+        if (cs.raw() != null && !cs.raw().equals(d.getCourierStatus())) {
+            ecommerce.entity.DeliveryEvent ev = new ecommerce.entity.DeliveryEvent();
+            ev.setDeliveryId(d.getId());
+            ev.setRawStatus(cs.raw());
+            ev.setMappedStatus(cs.status() != null ? cs.status().name() : null);
+            ev.setSource(source);
+            ev.setOccurredAt(now);
+            eventRepository.save(ev);
+        }
+
+        if (riderName != null && !riderName.isBlank()) d.setRiderName(riderName.trim());
+        if (riderPhone != null && !riderPhone.isBlank()) d.setRiderPhone(riderPhone.trim());
+        if ((riderName != null && !riderName.isBlank()) || (riderPhone != null && !riderPhone.isBlank())) d.setRiderUpdatedAt(now);
+
         d.setCourierStatus(cs.raw());
         d.setLastSyncedAt(now);
 

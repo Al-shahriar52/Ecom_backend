@@ -149,7 +149,7 @@ public class AdminOrderServiceImpl implements AdminOrderService {
         if (!orderIds.isEmpty()) {
             invoiceRepository.updateInvoiceStatuses(invoices, InvoiceStatus.CANCELLED);
             // Step 2: Bulk update only the Orders at once
-            orderRepository.updateOrderStatusesByIds(orderIds, ecommerce.enums.OrderStatus.CANCELLED);
+            orderRepository.cancelOrdersByIds(orderIds, LocalDateTime.now());
         } else {
             throw new BadRequestException("No orders found for the provided invoice numbers");
         }
@@ -253,7 +253,21 @@ public class AdminOrderServiceImpl implements AdminOrderService {
     @Override
     @Transactional
     public void requestParcelPickup(List<Long> orderIds, String providerKey) {
+        requestParcelPickup(orderIds, providerKey, null);
+    }
+
+    @Override
+    @Transactional
+    public void requestParcelPickup(List<Long> orderIds, String providerKey, Map<Long, Double> codOverrides) {
         if (orderIds == null || orderIds.isEmpty()) return;
+        if (codOverrides != null) {
+            for (Map.Entry<Long, Double> e : codOverrides.entrySet()) {
+                Double v = e.getValue();
+                if (v != null && (v < 0 || v > 1_000_000)) {
+                    throw new BadRequestException("COD amount must be between 0 and 1,000,000.");
+                }
+            }
+        }
 
         List<Order> orders = orderRepository.findAllById(orderIds);
         List<Invoice> invoices = invoiceRepository.findByOrder_IdIn(orderIds);
@@ -277,7 +291,7 @@ public class AdminOrderServiceImpl implements AdminOrderService {
         List<BookingRequest> parcels = new ArrayList<>();
         for (Order o : validOrdersForPickup) {
             Invoice inv = invoiceMap.get(o.getId());
-            if (inv != null) parcels.add(new BookingRequest(o, inv));
+            if (inv != null) parcels.add(new BookingRequest(o, inv, codOverrides != null ? codOverrides.get(o.getId()) : null));
         }
 
         Map<Long, Order> orderById = new HashMap<>();
@@ -297,6 +311,7 @@ public class AdminOrderServiceImpl implements AdminOrderService {
 
             // --- A. UPDATE THE ORDER ---
             o.setOrderStatus(ecommerce.enums.OrderStatus.SHIPPED);
+            stampStatusTime(o, ecommerce.enums.OrderStatus.SHIPPED);
             ordersToUpdate.add(o);
 
             // --- B. CREATE THE DELIVERY RECORD ---
@@ -310,7 +325,9 @@ public class AdminOrderServiceImpl implements AdminOrderService {
 
             // Determine COD amount based on Payment Method
             Invoice inv = invoiceMap.get(o.getId());
-            double codAmount = o.getPaymentMethod() == ecommerce.enums.PaymentMethod.COD ? inv.getTotalAmount() : 0.0;
+            double codAmount = o.getPaymentMethod() == ecommerce.enums.PaymentMethod.COD
+                    ? (codOverrides != null && codOverrides.get(o.getId()) != null ? codOverrides.get(o.getId()) : inv.getTotalAmount())
+                    : 0.0;
             delivery.setCodAmount(codAmount);
             delivery.setDeliveryFee(r.deliveryFee());
 
@@ -338,6 +355,26 @@ public class AdminOrderServiceImpl implements AdminOrderService {
         return mapToDetailDTO(order);
     }
 
+    /** Records when an order reached a stage, the first time only, so tracking can show a real time for each step. */
+    private static void stampStatusTime(Order o, ecommerce.enums.OrderStatus s) {
+        LocalDateTime now = LocalDateTime.now();
+        switch (s) {
+            case CONFIRMED -> { if (o.getConfirmedAt() == null) o.setConfirmedAt(now); }
+            case PACKAGED -> {
+                if (o.getConfirmedAt() == null) o.setConfirmedAt(now);
+                if (o.getPackagedAt() == null) o.setPackagedAt(now);
+            }
+            case SHIPPED -> {
+                if (o.getConfirmedAt() == null) o.setConfirmedAt(now);
+                if (o.getPackagedAt() == null) o.setPackagedAt(now);
+                if (o.getShippedAt() == null) o.setShippedAt(now);
+            }
+            case DELIVERED -> { if (o.getDeliveredAt() == null) o.setDeliveredAt(now); }
+            case CANCELLED -> { if (o.getCancelledAt() == null) o.setCancelledAt(now); }
+            default -> { }
+        }
+    }
+
     @Override
     @Transactional
     public void updateOrderStatus(Long orderId, ecommerce.dto.admin.UpdateOrderStatusRequest request) {
@@ -348,6 +385,7 @@ public class AdminOrderServiceImpl implements AdminOrderService {
         if (request.getOrderStatus() != null && !request.getOrderStatus().isBlank()) {
             try {
                 order.setOrderStatus(ecommerce.enums.OrderStatus.valueOf(request.getOrderStatus()));
+                stampStatusTime(order, order.getOrderStatus());
             } catch (IllegalArgumentException e) {
                 throw new BadRequestException("Invalid order status: " + request.getOrderStatus());
             }

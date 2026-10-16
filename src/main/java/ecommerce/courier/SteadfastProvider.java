@@ -50,7 +50,7 @@ public class SteadfastProvider implements CourierProvider {
         if (parcels.size() == 1) {
             // Single order: errors propagate to the caller, as before.
             BookingRequest p = parcels.get(0);
-            JsonNode response = client.sendSinglePickupRequest(p.order(), p.invoice());
+            JsonNode response = client.sendSinglePickupRequest(p.order(), p.invoice(), p.codOverride());
             results.addAll(parse(response, parcels));
             return results;
         }
@@ -60,7 +60,10 @@ public class SteadfastProvider implements CourierProvider {
             Map<Long, Invoice> invoiceMap = new HashMap<>();
             parcels.forEach(p -> invoiceMap.put(p.orderId(), p.invoice()));
 
-            JsonNode bulk = client.sendBulkPickupRequest(orders, invoiceMap);
+            Map<Long, Double> overrides = new HashMap<>();
+            parcels.forEach(p -> { if (p.codOverride() != null) overrides.put(p.orderId(), p.codOverride()); });
+
+            JsonNode bulk = client.sendBulkPickupRequest(orders, invoiceMap, overrides);
             if (bulk == null || (bulk.has("status") && bulk.get("status").asInt() >= 400)) {
                 throw new RuntimeException("Bulk API returned an error or null response.");
             }
@@ -70,7 +73,7 @@ public class SteadfastProvider implements CourierProvider {
             results.clear();
             for (BookingRequest p : parcels) {
                 try {
-                    JsonNode single = client.sendSinglePickupRequest(p.order(), p.invoice());
+                    JsonNode single = client.sendSinglePickupRequest(p.order(), p.invoice(), p.codOverride());
                     results.addAll(parse(single, List.of(p)));
                 } catch (Exception ex) {
                     System.err.println("Fallback failed for invoice " + p.invoice().getInvoiceNumber() + ": " + ex.getMessage());

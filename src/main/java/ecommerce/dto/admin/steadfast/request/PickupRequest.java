@@ -16,4 +16,7 @@ public class PickupRequest {
 
     /** Optional courier key ("steadfast", "pathao"). Omit to use the default courier. */
     private String courier;
+
+    /** Optional: orderId -> amount the rider should collect, replacing the invoice total for that parcel. */
+    private java.util.Map<Long, Double> codOverrides;
 }

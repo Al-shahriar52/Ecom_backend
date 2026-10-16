@@ -67,7 +67,7 @@ public class AdminOrderControllerImpl implements AdminOrderController {
     @SecurityRequirement(name = "bearerAuth")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> requestSteadfastPickup(@RequestBody PickupRequest request) {
-        adminOrderService.requestParcelPickup(request.getOrderIds(), request.getCourier());
+        adminOrderService.requestParcelPickup(request.getOrderIds(), request.getCourier(), request.getCodOverrides());
         return new ResponseEntity<>(GenericResponseDto.success("Order pickup request successfully", null, HttpStatus.OK.value()), HttpStatus.OK);
     }
 

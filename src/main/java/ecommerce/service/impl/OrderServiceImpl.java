@@ -85,7 +85,7 @@ public class OrderServiceImpl implements OrderService {
                 newGuest.setName(request.getName());
                 newGuest.setEmail(request.getEmail());
                 newGuest.setPhone(request.getPhone());
-                newGuest.setPassword(java.util.UUID.randomUUID().toString());
+                newGuest.setPassword(UUID.randomUUID().toString());
                 newGuest.setStatus(false);
 
                 finalOrderUser = userRepository.save(newGuest);
@@ -98,7 +98,7 @@ public class OrderServiceImpl implements OrderService {
                     currentUser.setPhone(request.getPhone());
                 }
                 if (currentUser.getPassword() == null) {
-                    currentUser.setPassword(java.util.UUID.randomUUID().toString());
+                    currentUser.setPassword(UUID.randomUUID().toString());
                 }
                 currentUser.setStatus(false);
                 finalOrderUser = userRepository.save(currentUser);
@@ -191,12 +191,13 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderItems(orderItems);
 
         // --- 5. STATUS SETUP ---
-        if (request.getPaymentMethod() == ecommerce.enums.PaymentMethod.COD) {
-            order.setPaymentStatus(ecommerce.enums.PaymentStatus.PENDING);
-            order.setOrderStatus(ecommerce.enums.OrderStatus.CONFIRMED);
+        if (request.getPaymentMethod() == PaymentMethod.COD) {
+            order.setPaymentStatus(PaymentStatus.PENDING);
+            order.setOrderStatus(OrderStatus.CONFIRMED);
+            order.setConfirmedAt(LocalDateTime.now());
         } else {
-            order.setPaymentStatus(ecommerce.enums.PaymentStatus.PENDING);
-            order.setOrderStatus(ecommerce.enums.OrderStatus.PENDING);
+            order.setPaymentStatus(PaymentStatus.PENDING);
+            order.setOrderStatus(OrderStatus.PENDING);
         }
 
         Order savedOrder = orderRepository.save(order);
@@ -220,10 +221,10 @@ public class OrderServiceImpl implements OrderService {
         invoice.setTaxAmount(0.0);
         invoice.setTotalAmount(finalTotal);
 
-        invoice.setIssuedAt(java.time.LocalDateTime.now());
+        invoice.setIssuedAt(LocalDateTime.now());
         invoice.setStatus(InvoiceStatus.UNPAID);
-        invoice.setDueDate(request.getPaymentMethod() == ecommerce.enums.PaymentMethod.COD ?
-                java.time.LocalDateTime.now().plusDays(7) : java.time.LocalDateTime.now().plusHours(24));
+        invoice.setDueDate(request.getPaymentMethod() == PaymentMethod.COD ?
+                LocalDateTime.now().plusDays(7) : LocalDateTime.now().plusHours(24));
 
         invoiceRepository.save(invoice);
 
