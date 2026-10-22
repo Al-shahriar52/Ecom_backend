@@ -44,6 +44,8 @@ public class User implements UserDetails { // <-- Implement the interface
 //            message = "At least one uppercase letter, one lowercase letter, one number and one special character")
     private String password;
 
+    private Boolean passwordSetByUser;
+
     @Enumerated(EnumType.STRING)
     @ElementCollection(fetch = FetchType.EAGER) // EAGER fetch is often needed for roles during authentication
     private Set<Role> roles = new HashSet<>();

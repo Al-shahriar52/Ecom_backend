@@ -15,6 +15,7 @@ public interface UserService {
     UserResponse getAll(int pageNo, int pageSize, String sortBY);
     UserDto update(UserDto userDto, HttpServletRequest servletRequest);
     void changePassword(ChangePasswordRequest request, HttpServletRequest servletRequest);
+    boolean hasOwnPassword(HttpServletRequest servletRequest);
     UserResponse search(int pageNo, int pageSize, String sortBy, String query);
     Map<String, Object> getAdminUserList(int pageNo, int pageSize, String search, String role, String status, String sortKey, String sortDir);
     UserStatsDto getUserStats();

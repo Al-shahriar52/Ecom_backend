@@ -8,6 +8,7 @@ import ecommerce.entity.Delivery;
 import ecommerce.entity.Order;
 import ecommerce.enums.DeliveryStatus;
 import ecommerce.enums.OrderStatus;
+import ecommerce.utils.AddressUtil;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -152,11 +153,7 @@ public class OrderTrackingService {
     }
 
     private static String joinAddress(Order o) {
-        List<String> parts = new ArrayList<>();
-        for (String s : new String[]{o.getShippingAddress(), o.getArea(), o.getCity()}) {
-            if (s != null && !s.isBlank()) parts.add(s.trim());
-        }
-        return String.join(", ", parts);
+        return AddressUtil.compose(o.getShippingAddress(), o.getArea(), o.getCity());
     }
 
     /** Steadfast publishes a timestamped event list per invoice. Other couriers: none, so the milestones carry the story. */

@@ -81,8 +81,11 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(userInfo.getId()).orElseThrow(() ->
                 new ResourceNotFound("User", "id", userInfo.getId()));
 
-        // matches() is null-safe: accounts without a usable password (e.g. Google/Facebook sign-ups) simply fail here
-        // and are pointed to the "forgot password" flow by the frontend.
+        // Google/Facebook sign-ups only have a system-generated placeholder password until they set their own.
+        if (Boolean.FALSE.equals(user.getPasswordSetByUser())) {
+            throw new BadRequestException("You have not set a password yet. Please use \"Set password\" first.");
+        }
+
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             throw new BadRequestException("Current password is incorrect.");
         }
@@ -91,9 +94,19 @@ public class UserServiceImpl implements UserService {
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setPasswordSetByUser(true);
         userRepository.save(user);
 
         activityService.logActivity(user.getId(), "Password changed from account dashboard.");
+    }
+
+    @Override
+    public boolean hasOwnPassword(HttpServletRequest servletRequest) {
+        User userInfo = tokenUtil.extractUserInfo(servletRequest);
+        User user = userRepository.findById(userInfo.getId()).orElseThrow(() ->
+                new ResourceNotFound("User", "id", userInfo.getId()));
+        // null (older accounts) counts as "has a password"
+        return !Boolean.FALSE.equals(user.getPasswordSetByUser());
     }
 
     @Override

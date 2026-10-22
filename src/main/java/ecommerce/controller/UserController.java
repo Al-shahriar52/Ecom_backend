@@ -13,6 +13,7 @@ public interface UserController {
     ResponseEntity<?> getAll(int pageNo, int pageSize, String sortBy);
     ResponseEntity<?> update(UserDto userDto, HttpServletRequest servletRequest);
     ResponseEntity<?> changePassword(ChangePasswordRequest request, HttpServletRequest servletRequest);
+    ResponseEntity<?> passwordStatus(HttpServletRequest servletRequest);
     ResponseEntity<?> search(int pageNo, int pageSize, String sortBy, String query);
     ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse servletResponse);
 }

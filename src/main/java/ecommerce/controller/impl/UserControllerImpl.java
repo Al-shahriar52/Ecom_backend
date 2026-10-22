@@ -22,6 +22,8 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/v1/user")
 @RequiredArgsConstructor
@@ -69,6 +71,13 @@ public class UserControllerImpl implements UserController {
     public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request, HttpServletRequest servletRequest) {
         userService.changePassword(request, servletRequest);
         return new ResponseEntity<>(GenericResponseDto.success("Password changed successfully.", null, HttpStatus.OK.value()), HttpStatus.OK);
+    }
+
+    @Override
+    @GetMapping("/password-status")
+    public ResponseEntity<?> passwordStatus(HttpServletRequest servletRequest) {
+        boolean hasPassword = userService.hasOwnPassword(servletRequest);
+        return new ResponseEntity<>(GenericResponseDto.success("Password status fetched.", Map.of("hasPassword", hasPassword), HttpStatus.OK.value()), HttpStatus.OK);
     }
 
     @Override

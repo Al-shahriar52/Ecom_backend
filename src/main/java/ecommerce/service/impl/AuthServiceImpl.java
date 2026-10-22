@@ -284,6 +284,7 @@ public class AuthServiceImpl implements AuthService {
 
         // Encode and set the new password
         user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPasswordSetByUser(true);
 
         // Clear the OTP so it can't be used again
         user.setOtp(null);

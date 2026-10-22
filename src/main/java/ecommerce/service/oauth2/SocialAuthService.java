@@ -75,6 +75,7 @@ public class SocialAuthService {
                 user.setStatus(true);
                 user.setAccountState(AccountState.ACTIVE);
                 user.setPassword(unusablePassword());
+                user.setPasswordSetByUser(false);
                 user.setOtp(null);
                 user.setOtpExpiry(null);
                 userRepository.save(user);
@@ -86,6 +87,7 @@ public class SocialAuthService {
             // The users table has a NOT NULL password column, so give social users a random password
             // nobody knows (they sign in with Google/Facebook, or can use "forgot password" later).
             user.setPassword(unusablePassword());
+            user.setPasswordSetByUser(false);
             user.setStatus(true);
             user.setAccountState(AccountState.ACTIVE);
             user.getRoles().add(Role.USER);
