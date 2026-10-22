@@ -42,6 +42,10 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
     Double sumTotalBalance();
 
     @Modifying
+    @Query("UPDATE Order o SET o.orderStatus = ecommerce.enums.OrderStatus.CANCELLED, o.cancelledAt = :at WHERE o.id IN :orderIds")
+    int cancelOrdersByIds(@Param("orderIds") List<Long> orderIds, @Param("at") java.time.LocalDateTime at);
+
+    @Modifying
     @Query("UPDATE Order o SET o.orderStatus = :status WHERE o.id IN :orderIds")
     int updateOrderStatusesByIds(@Param("orderIds") List<Long> orderIds, @Param("status") OrderStatus status);
 

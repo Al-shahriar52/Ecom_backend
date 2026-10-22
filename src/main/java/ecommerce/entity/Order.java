@@ -54,8 +54,10 @@ public class Order {
     private OrderStatus orderStatus = OrderStatus.PENDING;
 
     private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime confirmedAt;
     private LocalDateTime packagedAt;
     private LocalDateTime shippedAt;
+    private LocalDateTime cancelledAt;
     private LocalDateTime deliveredAt;
 
     private boolean isDelivered = false;

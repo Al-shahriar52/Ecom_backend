@@ -7,6 +7,7 @@ import ecommerce.entity.Invoice;
 import ecommerce.entity.Order;
 import ecommerce.entity.OrderItem;
 import ecommerce.repository.CourierStoreRepository;
+import ecommerce.utils.AddressUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -90,7 +91,7 @@ public class PathaoProvider implements CourierProvider {
             throw new IllegalArgumentException(inv_no + ": phone must be 11 digits starting with 01");
         }
 
-        String address = joinAddress(o.getShippingAddress(), o.getArea(), o.getCity());
+        String address = AddressUtil.compose(o.getShippingAddress(), o.getArea(), o.getCity());
         if (address.length() < 10) {
             throw new IllegalArgumentException(inv_no + ": address must be at least 10 characters");
         }
@@ -109,8 +110,7 @@ public class PathaoProvider implements CourierProvider {
         }
         if (qty < 1) qty = 1;
 
-        long cod = o.getPaymentMethod() == ecommerce.enums.PaymentMethod.COD && inv.getTotalAmount() != null
-                ? Math.round(inv.getTotalAmount()) : 0L;
+        long cod = Math.round(p.cod());
 
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("store_id", storeId);

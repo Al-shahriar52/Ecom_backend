@@ -5,6 +5,7 @@ import ecommerce.controller.UserController;
 import ecommerce.dto.GenericResponseDto;
 import ecommerce.dto.LoginResponse;
 import ecommerce.dto.UserDto;
+import ecommerce.dto.auth.ChangePasswordRequest;
 import ecommerce.dto.pageResponse.UserResponse;
 import ecommerce.service.AuthService;
 import ecommerce.service.UserService;
@@ -20,6 +21,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/user")
@@ -61,6 +64,20 @@ public class UserControllerImpl implements UserController {
     public ResponseEntity<?> update(@RequestBody @Valid UserDto userDto, HttpServletRequest servletRequest) {
         UserDto updateUser = userService.update(userDto, servletRequest);
         return new ResponseEntity<>(GenericResponseDto.success("Account updated successfully", updateUser, HttpStatus.OK.value()), HttpStatus.OK);
+    }
+
+    @Override
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request, HttpServletRequest servletRequest) {
+        userService.changePassword(request, servletRequest);
+        return new ResponseEntity<>(GenericResponseDto.success("Password changed successfully.", null, HttpStatus.OK.value()), HttpStatus.OK);
+    }
+
+    @Override
+    @GetMapping("/password-status")
+    public ResponseEntity<?> passwordStatus(HttpServletRequest servletRequest) {
+        boolean hasPassword = userService.hasOwnPassword(servletRequest);
+        return new ResponseEntity<>(GenericResponseDto.success("Password status fetched.", Map.of("hasPassword", hasPassword), HttpStatus.OK.value()), HttpStatus.OK);
     }
 
     @Override

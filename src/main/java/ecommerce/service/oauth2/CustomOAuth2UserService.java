@@ -3,6 +3,7 @@ package ecommerce.service.oauth2;
 import ecommerce.entity.User;
 import ecommerce.enums.SocialProvider;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -18,6 +19,7 @@ import java.util.Map;
  * Called by Spring Security after Google/Facebook return the user's profile.
  * Maps the profile to an application User and exposes its id as "appUserId".
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
@@ -46,8 +48,18 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         boolean emailVerified = provider == SocialProvider.GOOGLE
                 && "true".equalsIgnoreCase(String.valueOf(attrs.get("email_verified")));
 
-        User user = socialAuthService.findOrCreateUser(
-                provider, String.valueOf(rawId), email, emailVerified, name);
+        User user;
+        try {
+            user = socialAuthService.findOrCreateUser(
+                    provider, String.valueOf(rawId), email, emailVerified, name);
+        } catch (OAuth2AuthenticationException e) {
+            throw e; // our own, user-friendly errors (email missing, suspended, ...)
+        } catch (RuntimeException e) {
+            // Without this, an unexpected error (database etc.) ends up on /error and the browser shows a bare 403.
+            log.error("Social login failed while finding/creating the user for {}", provider, e);
+            throw new OAuth2AuthenticationException(new OAuth2Error("server_error"),
+                    "Could not complete social login. Please try again.", e);
+        }
 
         Map<String, Object> enriched = new HashMap<String, Object>(attrs);
         enriched.put("appUserId", user.getId());
