@@ -31,7 +31,7 @@ public class AdminExpenseControllerImpl implements AdminExpenseController {
 
     @PostMapping
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 9)")
     @Override
     public ResponseEntity<?> create(@RequestPart("expense") String expenseJson,
                                      @RequestPart(value = "receipt", required = false) MultipartFile receipt,
@@ -45,7 +45,7 @@ public class AdminExpenseControllerImpl implements AdminExpenseController {
 
     @GetMapping
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 9)")
     @Override
     public ResponseEntity<?> search(@RequestParam(defaultValue = "0") int pageNo,
                                      @RequestParam(defaultValue = "20") int pageSize,
@@ -60,7 +60,7 @@ public class AdminExpenseControllerImpl implements AdminExpenseController {
 
     @GetMapping("/summary")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 9)")
     @Override
     public ResponseEntity<?> summary(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
                                       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
@@ -75,7 +75,7 @@ public class AdminExpenseControllerImpl implements AdminExpenseController {
 
     @GetMapping("/monthly-trend")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 9)")
     @Override
     public ResponseEntity<?> monthlyTrend(@RequestParam String category, @RequestParam(defaultValue = "6") int months) {
         Map<String, Double> data = expenseService.monthlyTrend(category, months);

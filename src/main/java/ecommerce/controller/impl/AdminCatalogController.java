@@ -17,7 +17,7 @@ import java.util.Map;
 /** Admin: brands, categories, sub-categories, cities, areas. */
 @RestController
 @RequestMapping("/api/v1/admin/catalog")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("@perm.has(authentication, 13)")
 @SecurityRequirement(name = "bearerAuth")
 @RequiredArgsConstructor
 public class AdminCatalogController {

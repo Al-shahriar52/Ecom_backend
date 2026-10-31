@@ -1,5 +1,6 @@
 package ecommerce.controller.impl;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import ecommerce.dto.GenericResponseDto;
 import ecommerce.dto.admin.user.MatrixUpdateRequestDto;
 import ecommerce.dto.admin.user.RoleMatrixResponseDto;
@@ -22,6 +23,7 @@ public class RoleMatrixController {
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("@perm.has(authentication, 3)")
     @PutMapping("/matrix")
     public ResponseEntity<GenericResponseDto<String>> updateMatrix(@RequestBody MatrixUpdateRequestDto request) {
         roleMatrixService.updateMatrix(request);

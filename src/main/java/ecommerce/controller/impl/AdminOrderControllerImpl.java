@@ -27,7 +27,7 @@ public class AdminOrderControllerImpl implements AdminOrderController {
     private final AdminOrderService adminOrderService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 4)")
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<?> getAllOrders(
             @RequestParam(defaultValue = "0") int page,
@@ -49,14 +49,14 @@ public class AdminOrderControllerImpl implements AdminOrderController {
 
     @GetMapping("/stats")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 4)")
     public ResponseEntity<?> getOrderStats() {
         return new ResponseEntity<>(GenericResponseDto.success("Statistics", adminOrderService.getOrderStats(), HttpStatus.OK.value()), HttpStatus.OK);
     }
 
     @PostMapping("/cancel")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 4)")
     public ResponseEntity<?> cancelOrders(@RequestBody CancelOrderRequest request) {
         adminOrderService.cancelOrders(request.getInvoices());
         // Returning a standard JSON response object
@@ -65,7 +65,7 @@ public class AdminOrderControllerImpl implements AdminOrderController {
 
     @PostMapping("/pickup")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 4)")
     public ResponseEntity<?> requestSteadfastPickup(@RequestBody PickupRequest request) {
         adminOrderService.requestParcelPickup(request.getOrderIds(), request.getCourier(), request.getCodOverrides());
         return new ResponseEntity<>(GenericResponseDto.success("Order pickup request successfully", null, HttpStatus.OK.value()), HttpStatus.OK);
@@ -73,7 +73,7 @@ public class AdminOrderControllerImpl implements AdminOrderController {
 
     @GetMapping("/{orderId}")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 4)")
     @Override
     public ResponseEntity<?> getOrderById(@PathVariable Long orderId) {
         return new ResponseEntity<>(GenericResponseDto.success("Order fetched successfully", adminOrderService.getOrderById(orderId), HttpStatus.OK.value()), HttpStatus.OK);
@@ -81,7 +81,7 @@ public class AdminOrderControllerImpl implements AdminOrderController {
 
     @PatchMapping("/{orderId}/status")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 4)")
     @Override
     public ResponseEntity<?> updateOrderStatus(@PathVariable Long orderId, @RequestBody ecommerce.dto.admin.UpdateOrderStatusRequest request) {
         adminOrderService.updateOrderStatus(orderId, request);
@@ -90,7 +90,7 @@ public class AdminOrderControllerImpl implements AdminOrderController {
 
     @GetMapping("/finance-transactions")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 4)")
     @Override
     public ResponseEntity<?> getFinanceTransactions(
             @RequestParam(defaultValue = "0") int page,

@@ -22,7 +22,7 @@ public class FrequentlyBoughtControllerImpl implements FrequentlyBoughtControlle
     private final FrequentlyBoughtService frequentlyBoughtService;
     @Override
     @PostMapping("/together")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 10)")
 
     public ResponseEntity<?> frequentlyBoughtTogether(@Valid @RequestBody FrequentlyBoughtRequestDto frequentlyBoughtRequestDto) {
         FrequentlyBoughtRequestDto response = frequentlyBoughtService.frequentlyBoughtTogether(frequentlyBoughtRequestDto);
@@ -36,7 +36,7 @@ public class FrequentlyBoughtControllerImpl implements FrequentlyBoughtControlle
     }
 
     @DeleteMapping("/together")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 10)")
     public ResponseEntity<?> unpairProducts(@RequestBody FrequentlyBoughtRequestDto requestDto) {
         frequentlyBoughtService.unpairFrequentlyBoughtProduct(requestDto.getMainProductId(), requestDto.getPairedProductId());
         return ResponseEntity.ok(GenericResponseDto.success("Product pairing removed successfully.", null, HttpStatus.OK.value()));

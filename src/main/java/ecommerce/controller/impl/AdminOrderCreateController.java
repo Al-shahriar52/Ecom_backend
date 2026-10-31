@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/admin/order-builder")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("@perm.has(authentication, 14)")
 @SecurityRequirement(name = "bearerAuth")
 public class AdminOrderCreateController {
 

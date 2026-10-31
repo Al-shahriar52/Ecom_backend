@@ -17,46 +17,50 @@ import java.util.*;
 @RequiredArgsConstructor
 public class RoleMatrixService {
 
+    /** Permission indexes. The order is stored in the database, so only ever ADD to the end. */
+    public static final int VIEW_DASHBOARD = 0, MANAGE_USERS = 1, CREATE_USERS = 2, EDIT_PERMISSIONS = 3, VIEW_ORDERS = 4,
+            REFUND_ORDERS = 5, EXPORT_DATA = 6, MANAGE_SETTINGS = 7, MANAGE_COUPONS = 8, MANAGE_ACCOUNTING = 9, MANAGE_FBT = 10,
+            MANAGE_PRODUCTS = 11, MANAGE_HOMEPAGE = 12, MANAGE_CATALOG = 13, CREATE_ORDERS = 14, MANAGE_COURIER = 15;
+
+    private static final List<String> PERMISSIONS = Arrays.asList(
+            "View dashboard",      // 0
+            "Manage users",        // 1
+            "Create users",        // 2
+            "Edit permissions",    // 3
+            "View orders",         // 4
+            "Refund orders",       // 5
+            "Export data",         // 6
+            "Manage settings",     // 7
+            "Manage Coupons",      // 8
+            "Manage Accounting",   // 9
+            "Manage FBT",          // 10
+            "Manage products",     // 11
+            "Manage homepage",     // 12
+            "Manage catalog",      // 13 (brands, categories, cities, areas)
+            "Create orders",       // 14 (admin-created orders)
+            "Manage courier"       // 15
+    );
+
+    /** Defaults, also used to fill the new columns for roles saved before they existed. Admin always has everything. */
+    private static final Map<String, List<Integer>> DEFAULTS = new LinkedHashMap<>();
+    static {
+        DEFAULTS.put("admin",   Collections.nCopies(PERMISSIONS.size(), 1));
+        DEFAULTS.put("manager", Arrays.asList(1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0));
+        DEFAULTS.put("user",    Arrays.asList(1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+        DEFAULTS.put("guest",   Arrays.asList(1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+        DEFAULTS.put("staff",   Arrays.asList(1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0));
+    }
+
     private final RoleMatrixConfigRepository repository;
     private final ObjectMapper objectMapper;
 
     private RoleMatrixResponseDto getDefaultConfig() {
         RoleMatrixResponseDto dto = new RoleMatrixResponseDto();
-
-        List<String> permissions = Arrays.asList(
-                "View dashboard",     // Index 0
-                "Manage users",       // Index 1
-                "Create users",       // Index 2
-                "Edit permissions",   // Index 3
-                "View orders",        // Index 4
-                "Refund orders",      // Index 5
-                "Export data",        // Index 6
-                "Manage settings",    // Index 7
-                "Manage Coupons",     // Index 8
-                "Manage Accounting",  // Index 9
-                "Manage FBT",          // Index 10
-                "Manage products"     // Index 11
-        );
-        dto.setPermissions(permissions);
-
-        // Seed metadata for ALL fixed roles from the Role enum
-        Map<String, RoleMetaDto> meta = new HashMap<>();
-        meta.put("admin", new RoleMetaDto("Administrator", "purple"));
-        meta.put("manager", new RoleMetaDto("Manager", "blue"));
-        meta.put("user", new RoleMetaDto("User", "emerald"));
-        meta.put("guest", new RoleMetaDto("Guest", "amber"));
-        meta.put("staff", new RoleMetaDto("Staff", "slate"));
-        dto.setRoleMeta(meta);
-
-        // Seed default permission arrays (11 items each) for ALL roles
+        dto.setPermissions(new ArrayList<>(PERMISSIONS));
+        dto.setRoleMeta(new HashMap<>());
         Map<String, List<Integer>> matrix = new HashMap<>();
-        matrix.put("admin", Arrays.asList(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1));
-        matrix.put("manager", Arrays.asList(1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1));
-        matrix.put("user", Arrays.asList(1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0));
-        matrix.put("guest", Arrays.asList(1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
-        matrix.put("staff", Arrays.asList(1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1));
+        DEFAULTS.forEach((k, v) -> matrix.put(k, new ArrayList<>(v)));
         dto.setMatrix(matrix);
-
         return dto;
     }
 
@@ -79,6 +83,21 @@ public class RoleMatrixService {
         }
     }
 
+    /** True when any of the given roles (e.g. "ROLE_STAFF") has this permission. Admin always does. */
+    public boolean hasPermission(Collection<String> roles, int index) {
+        if (roles == null) return false;
+        Map<String, List<Integer>> matrix = null;
+        for (String r : roles) {
+            if (r == null) continue;
+            String key = r.replaceFirst("^ROLE_", "").toLowerCase();
+            if (key.equals("admin")) return true;
+            if (matrix == null) matrix = getRoleMatrix().getMatrix();
+            List<Integer> perms = matrix.get(key);
+            if (perms != null && index >= 0 && index < perms.size() && Integer.valueOf(1).equals(perms.get(index))) return true;
+        }
+        return false;
+    }
+
     @Transactional
     public void updateMatrix(MatrixUpdateRequestDto request) {
         RoleMatrixResponseDto currentConfig = getRoleMatrix();
@@ -88,6 +107,9 @@ public class RoleMatrixService {
         }
 
         String roleKey = request.getRole().toUpperCase().replace("ROLE_", "").toLowerCase();
+        if (roleKey.equals("admin")) {
+            throw new IllegalArgumentException("Administrator always has every permission.");
+        }
         Map<String, List<Integer>> matrix = currentConfig.getMatrix();
 
         if (matrix.containsKey(roleKey)) {
@@ -105,15 +127,9 @@ public class RoleMatrixService {
     }
 
     private void normalizeAndSyncConfig(RoleMatrixResponseDto dto) {
-        List<String> currentPermissions = Arrays.asList(
-                "View dashboard", "Manage users", "Create users", "Edit permissions",
-                "View orders", "Refund orders", "Export data", "Manage settings",
-                "Manage Coupons", "Manage Accounting", "Manage FBT", "Manage products"
-        );
-        dto.setPermissions(currentPermissions);
-        int targetSize = currentPermissions.size();
+        dto.setPermissions(new ArrayList<>(PERMISSIONS));
+        int targetSize = PERMISSIONS.size();
 
-        // Ensure default meta items exist for standard roles if missing
         if (dto.getRoleMeta() == null) {
             dto.setRoleMeta(new HashMap<>());
         }
@@ -124,31 +140,26 @@ public class RoleMatrixService {
         meta.putIfAbsent("guest", new RoleMetaDto("Guest", "amber"));
         meta.putIfAbsent("staff", new RoleMetaDto("Staff", "slate"));
 
+        Map<String, List<Integer>> normalizedMatrix = new HashMap<>();
         if (dto.getMatrix() != null) {
-            Map<String, List<Integer>> normalizedMatrix = new HashMap<>();
             for (Map.Entry<String, List<Integer>> entry : dto.getMatrix().entrySet()) {
                 String cleanKey = entry.getKey().toUpperCase().replace("ROLE_", "").toLowerCase();
                 List<Integer> perms = new ArrayList<>(entry.getValue());
+                List<Integer> defaults = DEFAULTS.get(cleanKey);
 
+                // roles saved before a permission existed get that permission's default for the role (or 0)
                 while (perms.size() < targetSize) {
-                    perms.add(0);
+                    perms.add(defaults != null ? defaults.get(perms.size()) : 0);
                 }
                 if (perms.size() > targetSize) {
-                    perms = perms.subList(0, targetSize);
+                    perms = new ArrayList<>(perms.subList(0, targetSize));
                 }
-
                 normalizedMatrix.put(cleanKey, perms);
             }
-
-            // Ensure all base roles have an entry in the matrix
-            normalizedMatrix.putIfAbsent("admin", new ArrayList<>(Collections.nCopies(targetSize, 1)));
-            normalizedMatrix.putIfAbsent("manager", new ArrayList<>(Arrays.asList(1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1)));
-            normalizedMatrix.putIfAbsent("user", new ArrayList<>(Arrays.asList(1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0)));
-            normalizedMatrix.putIfAbsent("guest", new ArrayList<>(Arrays.asList(1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)));
-            normalizedMatrix.putIfAbsent("staff", new ArrayList<>(Arrays.asList(1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1)));
-
-            dto.setMatrix(normalizedMatrix);
         }
+        DEFAULTS.forEach((k, v) -> normalizedMatrix.putIfAbsent(k, new ArrayList<>(v)));
+        normalizedMatrix.put("admin", new ArrayList<>(Collections.nCopies(targetSize, 1)));   // admin: always everything
+        dto.setMatrix(normalizedMatrix);
     }
 
     private void saveConfig(RoleMatrixResponseDto dto) {

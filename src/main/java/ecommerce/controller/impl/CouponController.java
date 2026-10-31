@@ -1,5 +1,6 @@
 package ecommerce.controller.impl;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import ecommerce.dto.admin.coupon.CouponCreateRequestDto;
 import ecommerce.dto.admin.coupon.CouponValidateRequestDto;
 import ecommerce.dto.admin.coupon.CouponValidateResponseDto;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/admin/coupons")
 @RequiredArgsConstructor
+@PreAuthorize("@perm.has(authentication, 8)")
 public class CouponController {
 
     private final CouponRepository couponRepository;

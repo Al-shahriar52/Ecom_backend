@@ -31,7 +31,7 @@ public class AdminCourierControllerImpl implements AdminCourierController {
 
     @GetMapping("/pickup-locations")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 15)")
     @Override
     public ResponseEntity<?> getLocations() {
         return ok("Pickup locations fetched", courierPickupService.getLocations());
@@ -39,7 +39,7 @@ public class AdminCourierControllerImpl implements AdminCourierController {
 
     @PostMapping("/pickup-locations")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 15)")
     @Override
     public ResponseEntity<?> createLocation(@Valid @RequestBody PickupLocationRequest request) {
         return ok("Pickup location saved", courierPickupService.createLocation(request));
@@ -47,7 +47,7 @@ public class AdminCourierControllerImpl implements AdminCourierController {
 
     @PutMapping("/pickup-locations/{id}")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 15)")
     @Override
     public ResponseEntity<?> updateLocation(@PathVariable Long id, @Valid @RequestBody PickupLocationRequest request) {
         return ok("Pickup location updated", courierPickupService.updateLocation(id, request));
@@ -55,7 +55,7 @@ public class AdminCourierControllerImpl implements AdminCourierController {
 
     @DeleteMapping("/pickup-locations/{id}")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 15)")
     @Override
     public ResponseEntity<?> deleteLocation(@PathVariable Long id) {
         courierPickupService.deleteLocation(id);
@@ -64,7 +64,7 @@ public class AdminCourierControllerImpl implements AdminCourierController {
 
     @GetMapping("/police-stations")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 15)")
     @Override
     public ResponseEntity<?> getPoliceStations() {
         return ok("Police stations fetched", courierPickupService.getPoliceStations());
@@ -72,7 +72,7 @@ public class AdminCourierControllerImpl implements AdminCourierController {
 
     @PostMapping("/pickup-requests")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 15)")
     @Override
     public ResponseEntity<?> createPickupRequest(@Valid @RequestBody CreatePickupRequestDto request, HttpServletRequest httpRequest) {
         User admin = tokenUtil.extractUserInfo(httpRequest);
@@ -83,7 +83,7 @@ public class AdminCourierControllerImpl implements AdminCourierController {
 
     @GetMapping("/pickup-requests")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 15)")
     @Override
     public ResponseEntity<?> getHistory(@RequestParam(defaultValue = "0") int pageNo,
                                         @RequestParam(defaultValue = "20") int pageSize) {
@@ -92,7 +92,7 @@ public class AdminCourierControllerImpl implements AdminCourierController {
 
     @GetMapping("/awaiting-pickup")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 15)")
     @Override
     public ResponseEntity<?> getAwaitingPickup() {
         return ok("Parcels awaiting pickup fetched", courierPickupService.getAwaitingPickup());

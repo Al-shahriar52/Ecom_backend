@@ -40,14 +40,14 @@ public class HomeContentController {
     }
 
     @GetMapping("/api/v1/admin/home/banners")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 12)")
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<?> list(@RequestParam(required = false) BannerPlacement placement) {
         return ResponseEntity.ok(GenericResponseDto.success("Banners", service.list(placement), HttpStatus.OK.value()));
     }
 
     @PostMapping(value = "/api/v1/admin/home/banners", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 12)")
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<?> create(@RequestParam BannerPlacement placement,
                                     @RequestParam(required = false) String title,
@@ -72,7 +72,7 @@ public class HomeContentController {
     }
 
     @PutMapping(value = "/api/v1/admin/home/banners/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 12)")
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<?> update(@PathVariable Long id,
                                     @RequestParam(required = false) String title,
@@ -97,14 +97,14 @@ public class HomeContentController {
     }
 
     @PatchMapping("/api/v1/admin/home/banners/{id}/active")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 12)")
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<?> setActive(@PathVariable Long id, @RequestParam boolean value) {
         return ResponseEntity.ok(GenericResponseDto.success("Updated", service.setActive(id, value), HttpStatus.OK.value()));
     }
 
     @PostMapping("/api/v1/admin/home/banners/reorder")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 12)")
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<?> reorder(@RequestBody Map<String, List<Long>> body) {
         service.reorder(body.get("ids"));
@@ -112,7 +112,7 @@ public class HomeContentController {
     }
 
     @DeleteMapping("/api/v1/admin/home/banners/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 12)")
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<?> delete(@PathVariable Long id) {
         service.delete(id);
