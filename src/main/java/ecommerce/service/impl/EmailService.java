@@ -14,6 +14,8 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.io.UnsupportedEncodingException;
+
 @Service
 @RequiredArgsConstructor
 public class EmailService {
@@ -28,7 +30,7 @@ public class EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setTo(toEmail);
-            helper.setFrom("notification@beautyhaat.com");
+            helper.setFrom("notification@beautyhaat.com", "BeautyHaat");
             helper.setSubject("Your BeautyHaat Verification Code");
 
             // Professional HTML Template
@@ -62,6 +64,8 @@ public class EmailService {
 
         } catch (MessagingException e) {
             throw new RuntimeException("Failed to send OTP email", e);
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException("Failed to encode email content", e);
         }
     }
 
@@ -72,7 +76,7 @@ public class EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setTo(order.getEmail());
-            helper.setFrom("notification@beautyhaat.com");
+            helper.setFrom("notification@beautyhaat.com", "BeautyHaat");
             helper.setSubject("Order Confirmed! Invoice " + invoice.getInvoiceNumber() + " - BeautyHaat");
 
             // --- 1. Build itemized rows dynamically ---
@@ -242,6 +246,8 @@ public class EmailService {
         } catch (MessagingException e) {
             // Logs an exception instead of blocking the critical checkout flow
             System.err.println("Failed to send order confirmation email for Order ID: " + order.getId() + ". Error: " + e.getMessage());
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException("Failed to encode email content", e);
         }
     }
 
@@ -527,7 +533,7 @@ public class EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setTo(toEmail);
-            helper.setFrom("notification@beautyhaat.com");
+            helper.setFrom("notification@beautyhaat.com", "BeautyHaat");
             helper.setSubject("Welcome to BeautyHaat - Your Temporary Password");
 
             String htmlContent = """
@@ -561,6 +567,8 @@ public class EmailService {
 
         } catch (MessagingException e) {
             System.err.println("Failed to send temporary password email to " + toEmail + ". Error: " + e.getMessage());
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException("Failed to encode email content", e);
         }
     }
 }
