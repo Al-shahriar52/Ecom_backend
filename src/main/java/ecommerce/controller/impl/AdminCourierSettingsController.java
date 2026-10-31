@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/admin/courier")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "bearerAuth")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("@perm.has(authentication, 15)")
 public class AdminCourierSettingsController {
 
     private final CourierAdminService service;

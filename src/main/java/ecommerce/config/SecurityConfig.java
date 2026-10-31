@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -20,6 +21,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -36,6 +38,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/auth/**",
                         "/api/v1/location/**",
+                        "/api/v1/home/**",
                         "/api/v1/product/categories",
                         "/api/v1/product/search",
                         "/api/v1/product/subCategory/{categoryId}",
@@ -54,8 +57,7 @@ public class SecurityConfig {
                         "/api/v1/webhooks/**",
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
-                        "/swagger-ui.html",
-                        "/api/v1/home/**")
+                        "/swagger-ui.html")
                         .permitAll()
                 .anyRequest().authenticated()
         )

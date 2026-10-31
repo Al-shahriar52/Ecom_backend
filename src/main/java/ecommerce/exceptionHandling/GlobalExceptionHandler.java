@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -91,6 +92,14 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.badRequest().body(
                 GenericResponseDto.error("Bad Request", firstErrorMessage, HttpStatus.BAD_REQUEST.value())
+        );
+    }
+
+    // 403 - the signed-in user's role does not have this permission in the matrix
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<GenericResponseDto<Object>> handleAccessDenied(AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                GenericResponseDto.error("Forbidden", "You do not have permission to do this.", HttpStatus.FORBIDDEN.value())
         );
     }
 

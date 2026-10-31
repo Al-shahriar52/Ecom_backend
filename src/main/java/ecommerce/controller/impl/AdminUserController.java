@@ -1,5 +1,6 @@
 package ecommerce.controller.impl;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import ecommerce.dto.GenericResponseDto;
 import ecommerce.dto.UserDto;
 import ecommerce.dto.admin.user.*;
@@ -20,6 +21,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/admin/users")
 @RequiredArgsConstructor
+@PreAuthorize("@perm.has(authentication, 1) or @perm.has(authentication, 2)")
 public class AdminUserController {
 
     private final UserService userService;

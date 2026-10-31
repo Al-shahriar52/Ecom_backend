@@ -33,7 +33,7 @@ public class AdminFinanceControllerImpl implements AdminFinanceController {
 
     @GetMapping("/dashboard")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 9)")
     @Override
     public ResponseEntity<?> getDashboard(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
@@ -45,7 +45,7 @@ public class AdminFinanceControllerImpl implements AdminFinanceController {
 
     @GetMapping("/cod")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 9)")
     @Override
     public ResponseEntity<?> getCodSummary() {
         return new ResponseEntity<>(GenericResponseDto.success("COD summary fetched successfully", financeCodService.getCodSummary(), HttpStatus.OK.value()), HttpStatus.OK);
@@ -53,7 +53,7 @@ public class AdminFinanceControllerImpl implements AdminFinanceController {
 
     @GetMapping("/profit-loss")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 9)")
     @Override
     public ResponseEntity<?> getProfitLoss(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
@@ -63,7 +63,7 @@ public class AdminFinanceControllerImpl implements AdminFinanceController {
 
     @GetMapping("/report")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 9)")
     @Override
     public ResponseEntity<?> getReport(
             @RequestParam(required = false, defaultValue = "week") String grain,
@@ -73,7 +73,7 @@ public class AdminFinanceControllerImpl implements AdminFinanceController {
 
     @GetMapping("/settlements")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 9)")
     public ResponseEntity<?> getSettlements(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
@@ -82,7 +82,7 @@ public class AdminFinanceControllerImpl implements AdminFinanceController {
 
     @GetMapping("/gateways")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 9)")
     @Override
     public ResponseEntity<?> getGateways() {
         return new ResponseEntity<>(GenericResponseDto.success("Gateways fetched successfully", gatewaySettingService.getAllWithStats(), HttpStatus.OK.value()), HttpStatus.OK);
@@ -90,7 +90,7 @@ public class AdminFinanceControllerImpl implements AdminFinanceController {
 
     @PatchMapping("/gateways/{paymentMethod}")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 9)")
     @Override
     public ResponseEntity<?> updateGatewayRate(@PathVariable String paymentMethod, @RequestBody UpdateGatewayRateRequest request) {
         return new ResponseEntity<>(GenericResponseDto.success("Gateway updated successfully", gatewaySettingService.updateRate(paymentMethod, request.getFeeRatePct()), HttpStatus.OK.value()), HttpStatus.OK);

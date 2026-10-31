@@ -45,7 +45,7 @@ public class OrderTrackingControllerImpl {
 
     @GetMapping("/admin/orders/{id}/tracking")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 4)")
     @Transactional(readOnly = true)
     public ResponseEntity<?> adminOrderTracking(@PathVariable Long id) {
         Order order = orderRepository.findById(id).orElse(null);

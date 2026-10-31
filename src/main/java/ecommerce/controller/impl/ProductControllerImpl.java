@@ -36,7 +36,7 @@ public class ProductControllerImpl implements ProductController {
     @Override
     @PostMapping(value = "/add", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 11)")
     public ResponseEntity<?> add(@Valid @RequestPart("productDto") String productDtoString, @RequestPart("files") MultipartFile[] files) throws IOException {
 
         ObjectMapper mapper = new ObjectMapper();
@@ -56,7 +56,7 @@ public class ProductControllerImpl implements ProductController {
     @Override
     @DeleteMapping("/delete/{productId}")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 11)")
     public ResponseEntity<?> delete(@PathVariable Long productId) {
         String message = productService.delete(productId);
         return new ResponseEntity<>(message, HttpStatus.OK);
@@ -65,7 +65,7 @@ public class ProductControllerImpl implements ProductController {
     @Override
     @PutMapping(value = "/update", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.has(authentication, 11)")
     public ResponseEntity<?> update(@Valid @RequestPart("productDto") String productDtoString, @RequestPart(value = "files", required = false) MultipartFile[] files) throws IOException {
 
         ObjectMapper mapper = new ObjectMapper();
