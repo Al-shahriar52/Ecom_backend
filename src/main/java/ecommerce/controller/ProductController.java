@@ -17,7 +17,8 @@ public interface ProductController {
                              String direction, String query,
                              Long categoryId, Long brandId,
                              Long subCategoryId, Double minPrice,
-                             Double maxPrice);
+                             Double maxPrice,
+                             String stock);
     ResponseEntity<?> categoryList();
     ResponseEntity<?> subCategoryList(Long categoryId);
     ResponseEntity<?> brandList();

@@ -30,7 +30,7 @@ public interface ProductService {
                            String sortBy, String direction,
                            String query, Long category,
                            Long brandId, Long subCategoryId,
-                           Double minPrice, Double maxPrice);
+                           Double minPrice, Double maxPrice, String stock);
 
     List<Category> categoryList();
 

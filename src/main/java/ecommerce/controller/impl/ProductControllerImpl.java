@@ -85,9 +85,10 @@ public class ProductControllerImpl implements ProductController {
                                     @RequestParam(required = false) Long brandId,
                                     @RequestParam(required = false) Long subCategoryId,
                                     @RequestParam(required = false) Double minPrice,
-                                    @RequestParam(required = false) Double maxPrice) {
+                                    @RequestParam(required = false) Double maxPrice,
+                                    @RequestParam(required = false) String stock) {   // IN | LIMITED | OUT (admin product list)
 
-        ProductResponse productSearch = productService.search(pageNo, pageSize, sortBy, sortDir, query, categoryId, brandId, subCategoryId, minPrice, maxPrice);
+        ProductResponse productSearch = productService.search(pageNo, pageSize, sortBy, sortDir, query, categoryId, brandId, subCategoryId, minPrice, maxPrice, stock);
         return new ResponseEntity<>(GenericResponseDto.success("Fetch search result successfully", productSearch, HttpStatus.OK.value()), HttpStatus.OK);
     }
 
