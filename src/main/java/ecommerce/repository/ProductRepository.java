@@ -32,9 +32,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             "AND (:subCategoryId IS NULL OR sc.id = :subCategoryId) " +
             "AND (:minPrice IS NULL OR p.discountedPrice >= :minPrice) " +
             "AND (:maxPrice IS NULL OR p.discountedPrice <= :maxPrice) " +
+            "AND (:stock IS NULL OR (:stock = 'OUT' AND p.quantity <= 0) " +
+            "  OR (:stock = 'LIMITED' AND p.quantity > 0 AND p.quantity < 5) " +
+            "  OR (:stock = 'IN' AND p.quantity >= 5)) " +
             "GROUP BY p.id, p.name, p.description, b.name, c.name, sc.name, t.name, " +
             "p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, p.slug")
-    Page<ProductSearchResponseDto> search(Pageable pageable, String query, Long categoryId, Long brandId, Long subCategoryId, Double minPrice, Double maxPrice);
+    Page<ProductSearchResponseDto> search(Pageable pageable, String query, Long categoryId, Long brandId, Long subCategoryId, Double minPrice, Double maxPrice, String stock);
 
     @Query("SELECT new ecommerce.entity.PriceRange(MIN(p.discountedPrice), MAX(p.discountedPrice)) " +
             "FROM Product p WHERE (:brandId IS NULL OR p.brand.id = :brandId)")
