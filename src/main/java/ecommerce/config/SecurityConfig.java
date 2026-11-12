@@ -3,6 +3,7 @@ package ecommerce.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -36,35 +37,33 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .logout(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/auth/**",
-                        "/api/v1/location/**",
-                        "/api/v1/home/**",
-                        "/api/v1/product/categories",
-                        "/api/v1/product/search",
-                        "/api/v1/product/subCategory/{categoryId}",
-                        "/api/v1/product/brand",
-                        "/api/v1/product/brandMenu",
-                        "/api/v1/product/tag",
-                        "/api/v1/product/filters",
-                        "/api/v1/product/newestArrivals",
-                        "/api/v1/product/detail/{productId}",
-                        "/api/v1/review/product/{productId}",
-                        "/api/v1/product/slug/{slug}",
-                        "/api/v1/product/similar/{productId}",
-                        "/api/v1/product/also-viewed/{productId}",
-                        "/api/v1/product/recommended",
-                        "/api/v1/frequently-bought/get/product/{productId}",
-                        "sitemap.xml",
-                        "/api/v1/product/similar/{productId}",
-                        "/api/v1/user/refreshAccessToken",
-                        "/api/v1/auth/guest",
-                        "/api/v1/webhooks/**",
-                        "/v3/api-docs/**",
-                        "/swagger-ui/**",
-                        "/swagger-ui.html")
-                        .permitAll()
-                .anyRequest().authenticated()
-        )
+                        .requestMatchers("/api/v1/auth/**",
+                                "/api/v1/location/**",
+                                "/api/v1/home/**",
+                                "/api/v1/user/refreshAccessToken",
+                                "/api/v1/webhooks/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html").permitAll()
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/v1/product/categories",
+                                "/api/v1/product/search",
+                                "/api/v1/product/subCategory/{categoryId}",
+                                "/api/v1/product/brand",
+                                "/api/v1/product/brandMenu",
+                                "/api/v1/product/tag",
+                                "/api/v1/product/filters",
+                                "/api/v1/product/newestArrivals",
+                                "/api/v1/product/detail/{productId}",
+                                "/api/v1/product/detail/slug/{slug}",
+                                "/api/v1/product/similar/{productId}",
+                                "/api/v1/product/also-viewed/{productId}",
+                                "/api/v1/product/recommended",
+                                "/api/v1/review/product/{productId}",
+                                "/api/v1/frequently-bought/get/product/{productId}",
+                                "/sitemap.xml", "/robots.txt").permitAll()
+                        .anyRequest().authenticated()
+                )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
