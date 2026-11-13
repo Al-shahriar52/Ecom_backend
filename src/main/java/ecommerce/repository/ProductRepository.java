@@ -61,27 +61,27 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Optional<Product> findBySku(String sku);
 
     @Query("SELECT new ecommerce.dto.details.ProductDetailDto(p.id, p.name, p.description, b.name, " +
-            "c.name, sc.name, t.name, p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews) " +
+            "c.name, sc.name, t.name, p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, p.slug) " +
             "FROM Product p " +
             "LEFT JOIN Brand b on b.id=p.brand.id " +
             "LEFT JOIN Category c on c.id=p.category.id " +
             "LEFT JOIN SubCategory sc on sc.id=p.subCategory.id " +
             "LEFT JOIN Tag t on t.id=p.tag.id " +
-            "WHERE p.id = :productId " +
+            "WHERE p.id = :productId AND (p.status IS NULL OR p.status <> ecommerce.entity.ProductStatus.DRAFT) " +
             "GROUP BY p.id, p.name, p.description, b.name, c.name, sc.name, " +
-            "p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews")
+            "p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, p.slug")
     ProductDetailDto getProductDetailById(Long productId);
 
     @Query("SELECT new ecommerce.dto.details.ProductDetailDto(p.id, p.name, p.description, b.name, " +
-            "c.name, sc.name, t.name, p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews) " +
+            "c.name, sc.name, t.name, p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, p.slug) " +
             "FROM Product p " +
             "LEFT JOIN Brand b on b.id=p.brand.id " +
             "LEFT JOIN Category c on c.id=p.category.id " +
             "LEFT JOIN SubCategory sc on sc.id=p.subCategory.id " +
             "LEFT JOIN Tag t on t.id=p.tag.id " +
-            "WHERE p.slug = :slug " +
+            "WHERE p.slug = :slug AND (p.status IS NULL OR p.status <> ecommerce.entity.ProductStatus.DRAFT) " +
             "GROUP BY p.id, p.name, p.description, b.name, c.name, sc.name, " +
-            "p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews")
+            "p.originalPrice, p.discountedPrice, p.quantity, p.sku, p.rating, p.numReviews, p.slug")
     ProductDetailDto getProductDetailBySlug(String slug);
 
     @Query("SELECT new ecommerce.dto.ProductSearchResponseDto(p.id, p.name, p.description, b.name, c.name, sc.name, " +

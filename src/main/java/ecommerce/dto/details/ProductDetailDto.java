@@ -22,11 +22,12 @@ public class ProductDetailDto {
     private Long numReviews;
     private List<String> imageUrls;
     private List<VariationDto> variations;
+    private String slug;
 
     public ProductDetailDto(Long productId, String name, String description,
                             String brandName, String categoryName, String subCategoryNames, String tagName,
                             double originalPrice, double discountedPrice, int quantity,
-                            String sku, Double rating, Long numReviews) {
+                            String sku, Double rating, Long numReviews, String slug) {
         this.productId = productId;
         this.name = name;
         this.description = description;
@@ -40,5 +41,6 @@ public class ProductDetailDto {
         this.sku = sku;
         this.rating = rating != null ? Math.round(rating * 10.0) / 10.0 : 0.0;
         this.numReviews = numReviews;
+        this.slug = slug;
     }
 }

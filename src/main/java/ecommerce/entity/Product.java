@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -67,6 +68,8 @@ public class Product {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
+    // Maintained by Hibernate on every insert/update; used as <lastmod> in the sitemap.
+    @UpdateTimestamp
     private LocalDateTime updatedAt;
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -86,14 +89,17 @@ public class Product {
     @Column(unique = true, nullable = false)
     private String slug;
 
+    // SEO: the slug is generated ONCE and never changes afterwards. Regenerating it on every
+    // update silently changed the product URL whenever the name was edited, which breaks the
+    // URL Google has already indexed. Leading/trailing dashes are stripped.
     @PrePersist
-    @PreUpdate
     public void generateSlug() {
-        if (this.name != null) {
+        if ((this.slug == null || this.slug.isBlank()) && this.name != null) {
             this.slug = this.name.toLowerCase()
                     .replaceAll("[^a-z0-9\\s]", "") // Removes special characters
+                    .trim()
                     .replaceAll("\\s+", "-")        // Replaces spaces with dashes
-                    .trim();
+                    .replaceAll("^-+|-+$", "");      // No leading/trailing dashes
         }
     }
 }

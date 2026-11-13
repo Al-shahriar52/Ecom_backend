@@ -66,6 +66,16 @@ public class GlobalExceptionHandler {
         );
     }
 
+    // 404 - Resource Not Found (ResourceNotFound is thrown by the services; without this
+    // handler it fell into the generic 500 handler, so Google/the frontend could never
+    // tell "product does not exist" from "server error")
+    @ExceptionHandler(ResourceNotFound.class)
+    public ResponseEntity<GenericResponseDto<Object>> handleResourceNotFound(ResourceNotFound ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                GenericResponseDto.error("Not Found", ex.getMessage(), HttpStatus.NOT_FOUND.value())
+        );
+    }
+
     // 400 - Validation errors from @Valid (DTO fields)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<GenericResponseDto<Object>> handleValidation(MethodArgumentNotValidException ex) {
