@@ -131,7 +131,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return path.equals("/api/v1/user/refreshAccessToken")
                 // OAuth2 (Google/Facebook) handshake URLs must never be blocked by a stale/invalid cookie
                 || path.startsWith("/oauth2/")
-                || path.startsWith("/login/oauth2/");
+                || path.startsWith("/login/oauth2/")
+                // Courier webhooks (Steadfast) send "Authorization: Bearer <webhook token>", which is NOT a login JWT.
+                // The webhook controller checks that token and the body signature itself.
+                || path.startsWith("/api/v1/webhooks/");
     }
 
     @Override
