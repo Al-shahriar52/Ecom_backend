@@ -114,8 +114,10 @@ public class CourierPickupServiceImpl implements CourierPickupService {
     }
 
     @Override
-    public Page<PickupRequest> getHistory(int pageNo, int pageSize) {
-        return requestRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(pageNo, Math.min(Math.max(pageSize, 1), 100)));
+    public Page<PickupHistoryDto> getHistory(int pageNo, int pageSize) {
+        return requestRepository
+                .findAllByOrderByCreatedAtDesc(PageRequest.of(pageNo, Math.min(Math.max(pageSize, 1), 100)))
+                .map(PickupHistoryDto::from);
     }
 
     @Override

@@ -45,7 +45,9 @@ public class SteadfastWebhookService {
 
         boolean bearerOk = authorization != null && authorization.startsWith("Bearer ")
                 && constantEq(authorization.substring(7).trim(), token);
-        boolean sigOk = signature != null && constantEq(signature.trim().toLowerCase(), hmacHex(rawBody, token));
+        String sig = signature == null ? null : signature.trim().toLowerCase();
+        if (sig != null && sig.startsWith("sha256=")) sig = sig.substring(7); // tolerate "sha256=<hex>" as well as plain hex
+        boolean sigOk = sig != null && constantEq(sig, hmacHex(rawBody, token));
         if (!bearerOk || !sigOk) return Result.UNAUTHORIZED;
 
         String raw = new String(rawBody, StandardCharsets.UTF_8);
